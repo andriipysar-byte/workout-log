@@ -1,15 +1,11 @@
 {
-  "date": "2026-07-28",
-  "cycle_day": "B2",
-  "kind": "training",
   "blocks": [
     {
-      "type": "cardio",
+      "duration_min": 15,
       "machine": "",
-      "duration_min": 15
+      "type": "cardio"
     },
     {
-      "type": "strength",
       "exercise": "гіперекстензія",
       "sets": [
         {
@@ -18,17 +14,18 @@
         {
           "reps": 12
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "жим лежачи",
+      "notes": "рамп до топ-сету + 1-2 бек-оф (шістки)",
       "sets": [],
-      "notes": "рамп до топ-сету + 1-2 бек-оф (шістки)"
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "тяга блочна сидячи",
+      "notes": "горизонтальна тяга",
       "sets": [
         {
           "reps": 6
@@ -46,10 +43,9 @@
           "reps": 6
         }
       ],
-      "notes": "горизонтальна тяга"
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "підйом на середню дельту",
       "sets": [
         {
@@ -67,16 +63,20 @@
         {
           "reps": 6
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "вис",
+      "notes": "4 × макс, секунди; хват",
       "sets": [],
-      "notes": "4 × макс, секунди; хват"
+      "type": "strength"
     },
     {
       "type": "cooldown"
     }
-  ]
+  ],
+  "cycle_day": "B2",
+  "date": "2026-07-28",
+  "kind": "training"
 }

@@ -15,11 +15,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from datetime import date, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 WEEKDAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def canonicalize(paths: list[Path]) -> None:
+    """Best-effort pass through wl_fmt (core/src/json.cpp's writer) so freshly
+    generated stubs already match the on-disk key order and don't need a separate
+    reformat pass later. No-op if the C++ tools haven't been built yet."""
+    wl_fmt = REPO / "build" / "bin" / "wl_fmt"
+    if not paths or not wl_fmt.exists():
+        return
+    subprocess.run([str(wl_fmt), *(str(p) for p in paths)], check=True)
 
 
 def training_dates(start: date, training_days: list[str], count: int) -> list[date]:
@@ -93,6 +104,7 @@ def main() -> None:
     out_dir = REPO / args.out
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    written: list[Path] = []
     for sess, when in zip(sessions, dates):
         expected = sess.get("weekday")
         actual = WEEKDAY_ABBR[when.weekday()]
@@ -108,7 +120,10 @@ def main() -> None:
         path.write_text(
             json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
+        written.append(path)
         print(f"wrote {path.name}")
+
+    canonicalize(written)
 
 
 if __name__ == "__main__":

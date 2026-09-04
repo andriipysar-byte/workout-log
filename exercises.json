@@ -2,322 +2,588 @@
   "$comment": "Exercise catalogue. `pattern` is the load-bearing field — it groups variants of one movement so conjugate rotation shows as progress rather than scatter (see doc/01, P8). `aliases` absorb historical spellings from years of logs. `category` is the force–velocity / training emphasis: power (olympic lifts — force under heavy load) and speed (light ballistic) both drive the P3 bar-speed rule; strength (max-force / loaded compound work); longevity (grip, core, delts, calves, mobility, conditioning — durability work). `primary_muscles` / `secondary_muscles` use anatomical major muscle groups (see docs/muscle_scheme.png): quads, hamstrings, glutes, adductors, calves, spinal_erectors, lats, traps, rhomboids, rear_delts, side_delts, front_delts, chest, triceps, biceps, forearms, abs, obliques, hip_flexors.",
   "exercises": [
     {
+      "aliases": [
+        "фронтальний присід",
+        "фр. присід"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "присід фронтальний",
-      "aliases": ["фронтальний присід", "фр. присід"],
       "pattern": "squat",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["quads", "glutes"],
-      "secondary_muscles": ["spinal_erectors", "adductors", "abs"]
+      "primary_muscles": [
+        "quads",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "spinal_erectors",
+        "adductors",
+        "abs"
+      ]
     },
     {
+      "aliases": [
+        "присід зі штангою на спині",
+        "бек-сквот",
+        "присід на спині"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "присід на плечах",
-      "aliases": ["присід зі штангою на спині", "бек-сквот", "присід на спині"],
       "pattern": "squat",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["quads", "glutes"],
-      "secondary_muscles": ["spinal_erectors", "hamstrings", "adductors"]
+      "primary_muscles": [
+        "quads",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "spinal_erectors",
+        "hamstrings",
+        "adductors"
+      ]
     },
     {
+      "aliases": [
+        "оверхед присід"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "присід оверхед",
-      "aliases": ["оверхед присід"],
       "pattern": "squat",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["quads", "glutes"],
-      "secondary_muscles": ["front_delts", "traps", "abs"]
+      "primary_muscles": [
+        "quads",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "front_delts",
+        "traps",
+        "abs"
+      ]
     },
     {
+      "category": "power",
+      "modality": "barbell",
       "name": "ривок",
-      "pattern": "olympic",
-      "modality": "barbell",
-      "category": "power",
       "notes": "P3: target 2–3 reps, stop on bar-speed drop.",
-      "primary_muscles": ["glutes", "hamstrings", "quads"],
-      "secondary_muscles": ["traps", "spinal_erectors", "front_delts"]
+      "pattern": "olympic",
+      "primary_muscles": [
+        "glutes",
+        "hamstrings",
+        "quads"
+      ],
+      "secondary_muscles": [
+        "traps",
+        "spinal_erectors",
+        "front_delts"
+      ]
     },
     {
+      "aliases": [
+        "взяття",
+        "тяга на груди",
+        "клін"
+      ],
+      "category": "power",
+      "modality": "barbell",
       "name": "взяття на груди",
-      "aliases": ["взяття", "тяга на груди", "клін"],
       "pattern": "olympic",
-      "modality": "barbell",
-      "category": "power",
-      "primary_muscles": ["glutes", "hamstrings", "quads"],
-      "secondary_muscles": ["traps", "spinal_erectors", "forearms"]
+      "primary_muscles": [
+        "glutes",
+        "hamstrings",
+        "quads"
+      ],
+      "secondary_muscles": [
+        "traps",
+        "spinal_erectors",
+        "forearms"
+      ]
     },
     {
+      "aliases": [
+        "протяжка"
+      ],
+      "category": "power",
+      "modality": "barbell",
       "name": "протяжка ривкова",
-      "aliases": ["протяжка"],
       "pattern": "olympic",
-      "modality": "barbell",
-      "category": "power",
-      "primary_muscles": ["traps", "glutes", "hamstrings"],
-      "secondary_muscles": ["spinal_erectors", "side_delts", "forearms"]
+      "primary_muscles": [
+        "traps",
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary_muscles": [
+        "spinal_erectors",
+        "side_delts",
+        "forearms"
+      ]
     },
     {
+      "category": "power",
+      "modality": "barbell",
       "name": "швунг",
-      "pattern": "olympic",
-      "modality": "barbell",
-      "category": "power",
       "notes": "Reps collapsed 6→4→2→1 across the ramp — exactly the P3 signal.",
-      "primary_muscles": ["front_delts", "triceps"],
-      "secondary_muscles": ["quads", "glutes", "traps"]
-    },
-    {
-      "name": "поштовх гирі",
-      "aliases": ["поштовх 2х гирі"],
       "pattern": "olympic",
-      "modality": "kettlebell",
-      "category": "power",
-      "primary_muscles": ["front_delts", "triceps"],
-      "secondary_muscles": ["quads", "glutes", "forearms"]
+      "primary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "quads",
+        "glutes",
+        "traps"
+      ]
     },
     {
+      "aliases": [
+        "поштовх 2х гирі"
+      ],
+      "category": "power",
+      "modality": "kettlebell",
+      "name": "поштовх гирі",
+      "pattern": "olympic",
+      "primary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "quads",
+        "glutes",
+        "forearms"
+      ]
+    },
+    {
+      "aliases": [
+        "махи",
+        "гирі",
+        "мах гирею",
+        "свінги"
+      ],
+      "category": "power",
+      "modality": "kettlebell",
       "name": "махи гирею",
-      "aliases": ["махи", "гирі", "мах гирею", "свінги"],
       "pattern": "hinge",
-      "modality": "kettlebell",
-      "category": "power",
-      "primary_muscles": ["glutes", "hamstrings"],
-      "secondary_muscles": ["spinal_erectors", "front_delts", "forearms"]
+      "primary_muscles": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary_muscles": [
+        "spinal_erectors",
+        "front_delts",
+        "forearms"
+      ]
     },
     {
-      "name": "гіперекстензія",
-      "aliases": ["гіперекстенз.", "гіперекст."],
-      "pattern": "hinge",
-      "modality": "bodyweight",
+      "aliases": [
+        "гіперекстенз.",
+        "гіперекст."
+      ],
       "category": "longevity",
-      "primary_muscles": ["spinal_erectors", "glutes"],
-      "secondary_muscles": ["hamstrings"]
-    },
-    {
-      "name": "румунська тяга",
-      "aliases": ["румунська станова", "рдл", "тяга румунська"],
+      "modality": "bodyweight",
+      "name": "гіперекстензія",
       "pattern": "hinge",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["hamstrings", "glutes"],
-      "secondary_muscles": ["spinal_erectors", "forearms"]
+      "primary_muscles": [
+        "spinal_erectors",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "hamstrings"
+      ]
     },
     {
+      "aliases": [
+        "румунська станова",
+        "рдл",
+        "тяга румунська"
+      ],
+      "category": "strength",
+      "modality": "barbell",
+      "name": "румунська тяга",
+      "pattern": "hinge",
+      "primary_muscles": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "spinal_erectors",
+        "forearms"
+      ]
+    },
+    {
+      "aliases": [
+        "жим лежачи зі штангою",
+        "бенч",
+        "жим штанги лежачи"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "жим лежачи",
-      "aliases": ["жим лежачи зі штангою", "бенч", "жим штанги лежачи"],
       "pattern": "press",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["chest", "triceps"],
-      "secondary_muscles": ["front_delts"]
+      "primary_muscles": [
+        "chest",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "front_delts"
+      ]
     },
     {
+      "aliases": [
+        "жим на похилій",
+        "жим під кутом",
+        "інклайн"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "жим на нахилі",
-      "aliases": ["жим на похилій", "жим під кутом", "інклайн"],
       "pattern": "press",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["chest", "front_delts"],
-      "secondary_muscles": ["triceps"]
+      "primary_muscles": [
+        "chest",
+        "front_delts"
+      ],
+      "secondary_muscles": [
+        "triceps"
+      ]
     },
     {
+      "aliases": [
+        "армійський жим",
+        "жим над головою",
+        "мілітарі",
+        "оверхед прес"
+      ],
+      "category": "strength",
+      "modality": "barbell",
       "name": "жим стоячи",
-      "aliases": ["армійський жим", "жим над головою", "мілітарі", "оверхед прес"],
       "pattern": "press",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["front_delts", "triceps"],
-      "secondary_muscles": ["side_delts", "traps", "abs"]
+      "primary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "side_delts",
+        "traps",
+        "abs"
+      ]
     },
     {
-      "name": "тяга блочна сидячи",
-      "aliases": ["тяга блочна сид."],
-      "pattern": "pull",
+      "aliases": [
+        "тяга блочна сид."
+      ],
+      "category": "strength",
       "modality": "machine",
-      "category": "strength",
-      "primary_muscles": ["lats", "rhomboids"],
-      "secondary_muscles": ["biceps", "rear_delts", "traps"]
+      "name": "тяга блочна сидячи",
+      "pattern": "pull",
+      "primary_muscles": [
+        "lats",
+        "rhomboids"
+      ],
+      "secondary_muscles": [
+        "biceps",
+        "rear_delts",
+        "traps"
+      ]
     },
     {
+      "category": "strength",
+      "modality": "bodyweight",
       "name": "підтягування",
       "pattern": "pull",
-      "modality": "bodyweight",
-      "category": "strength",
-      "primary_muscles": ["lats"],
-      "secondary_muscles": ["biceps", "rhomboids", "forearms"]
+      "primary_muscles": [
+        "lats"
+      ],
+      "secondary_muscles": [
+        "biceps",
+        "rhomboids",
+        "forearms"
+      ]
     },
     {
+      "aliases": [
+        "підтяг. з паузами"
+      ],
+      "category": "strength",
+      "modality": "bodyweight",
       "name": "підтягування з паузами",
-      "aliases": ["підтяг. з паузами"],
       "pattern": "pull",
-      "modality": "bodyweight",
-      "category": "strength",
-      "primary_muscles": ["lats"],
-      "secondary_muscles": ["biceps", "rhomboids", "forearms"]
+      "primary_muscles": [
+        "lats"
+      ],
+      "secondary_muscles": [
+        "biceps",
+        "rhomboids",
+        "forearms"
+      ]
     },
     {
+      "category": "strength",
+      "modality": "bodyweight",
       "name": "підтягування з вагою",
       "pattern": "pull",
-      "modality": "bodyweight",
-      "category": "strength",
-      "primary_muscles": ["lats"],
-      "secondary_muscles": ["biceps", "rhomboids", "forearms"]
+      "primary_muscles": [
+        "lats"
+      ],
+      "secondary_muscles": [
+        "biceps",
+        "rhomboids",
+        "forearms"
+      ]
     },
     {
+      "aliases": [
+        "відтискання",
+        "пуш-ап"
+      ],
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "віджимання",
-      "aliases": ["відтискання", "пуш-ап"],
       "pattern": "press",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["chest", "triceps"],
-      "secondary_muscles": ["front_delts", "abs"]
+      "primary_muscles": [
+        "chest",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "front_delts",
+        "abs"
+      ]
     },
     {
-      "name": "підйом на середню дельту",
-      "aliases": ["підйом на сер. дельту", "підйоми на сер. дельту"],
-      "pattern": "press",
+      "aliases": [
+        "підйом на сер. дельту",
+        "підйоми на сер. дельту"
+      ],
+      "category": "longevity",
       "modality": "dumbbell",
-      "category": "longevity",
-      "primary_muscles": ["side_delts"],
-      "secondary_muscles": ["traps"]
+      "name": "підйом на середню дельту",
+      "pattern": "press",
+      "primary_muscles": [
+        "side_delts"
+      ],
+      "secondary_muscles": [
+        "traps"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "dumbbell",
       "name": "підйом на задню дельту",
       "pattern": "press",
-      "modality": "dumbbell",
-      "category": "longevity",
-      "primary_muscles": ["rear_delts"],
-      "secondary_muscles": ["rhomboids", "traps"]
+      "primary_muscles": [
+        "rear_delts"
+      ],
+      "secondary_muscles": [
+        "rhomboids",
+        "traps"
+      ]
     },
     {
+      "category": "strength",
+      "modality": "barbell",
       "name": "тяга ваги лежачи",
       "pattern": "pull",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["lats", "rhomboids"],
-      "secondary_muscles": ["rear_delts", "biceps"]
+      "primary_muscles": [
+        "lats",
+        "rhomboids"
+      ],
+      "secondary_muscles": [
+        "rear_delts",
+        "biceps"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "machine",
       "name": "підйоми на носки",
       "pattern": "carry",
-      "modality": "machine",
-      "category": "longevity",
-      "primary_muscles": ["calves"],
+      "primary_muscles": [
+        "calves"
+      ],
       "secondary_muscles": []
     },
     {
+      "category": "strength",
+      "modality": "machine",
       "name": "згинання ніг стоячи",
       "pattern": "hinge",
-      "modality": "machine",
-      "category": "strength",
-      "primary_muscles": ["hamstrings"],
-      "secondary_muscles": ["calves"]
+      "primary_muscles": [
+        "hamstrings"
+      ],
+      "secondary_muscles": [
+        "calves"
+      ]
     },
     {
+      "category": "speed",
+      "modality": "bodyweight",
       "name": "застрибування на тумбу",
       "pattern": "olympic",
-      "modality": "bodyweight",
-      "category": "speed",
-      "primary_muscles": ["quads", "glutes"],
-      "secondary_muscles": ["calves", "hamstrings"]
+      "primary_muscles": [
+        "quads",
+        "glutes"
+      ],
+      "secondary_muscles": [
+        "calves",
+        "hamstrings"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "скручування",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["abs"],
-      "secondary_muscles": ["obliques"]
+      "primary_muscles": [
+        "abs"
+      ],
+      "secondary_muscles": [
+        "obliques"
+      ]
     },
     {
+      "$comment": "Measured in seconds, not reps.",
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "вис",
       "pattern": "grip",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "$comment": "Measured in seconds, not reps.",
-      "primary_muscles": ["forearms"],
-      "secondary_muscles": ["lats"]
+      "primary_muscles": [
+        "forearms"
+      ],
+      "secondary_muscles": [
+        "lats"
+      ]
     },
     {
+      "aliases": [
+        "прокруч. кисть з гант.",
+        "прокрут. кисть"
+      ],
+      "category": "longevity",
+      "modality": "dumbbell",
       "name": "прокручування кисті з гантелею",
-      "aliases": ["прокруч. кисть з гант.", "прокрут. кисть"],
       "pattern": "grip",
-      "modality": "dumbbell",
-      "category": "longevity",
-      "primary_muscles": ["forearms"],
+      "primary_muscles": [
+        "forearms"
+      ],
       "secondary_muscles": []
     },
     {
+      "aliases": [
+        "кисть з гант."
+      ],
+      "category": "longevity",
+      "modality": "dumbbell",
       "name": "кисть з гантелею",
-      "aliases": ["кисть з гант."],
       "pattern": "grip",
-      "modality": "dumbbell",
-      "category": "longevity",
-      "primary_muscles": ["forearms"],
+      "primary_muscles": [
+        "forearms"
+      ],
       "secondary_muscles": []
     },
     {
+      "category": "strength",
+      "modality": "barbell",
       "name": "трастери",
       "pattern": "squat",
-      "modality": "barbell",
-      "category": "strength",
-      "primary_muscles": ["quads", "glutes", "front_delts"],
-      "secondary_muscles": ["triceps", "abs"]
+      "primary_muscles": [
+        "quads",
+        "glutes",
+        "front_delts"
+      ],
+      "secondary_muscles": [
+        "triceps",
+        "abs"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "бьорпі",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["quads", "chest"],
-      "secondary_muscles": ["abs", "triceps"]
+      "primary_muscles": [
+        "quads",
+        "chest"
+      ],
+      "secondary_muscles": [
+        "abs",
+        "triceps"
+      ]
     },
     {
+      "category": "speed",
+      "modality": "bodyweight",
       "name": "перекидання м'яча",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "speed",
-      "primary_muscles": ["abs", "front_delts"],
-      "secondary_muscles": ["lats", "glutes"]
+      "primary_muscles": [
+        "abs",
+        "front_delts"
+      ],
+      "secondary_muscles": [
+        "lats",
+        "glutes"
+      ]
     },
     {
-      "name": "лікті до колін",
-      "aliases": ["насос"],
-      "pattern": "core",
-      "modality": "bodyweight",
+      "aliases": [
+        "насос"
+      ],
       "category": "longevity",
-      "primary_muscles": ["abs"],
-      "secondary_muscles": ["hip_flexors", "obliques"]
+      "modality": "bodyweight",
+      "name": "лікті до колін",
+      "pattern": "core",
+      "primary_muscles": [
+        "abs"
+      ],
+      "secondary_muscles": [
+        "hip_flexors",
+        "obliques"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "складка",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["abs"],
-      "secondary_muscles": ["hip_flexors"]
+      "primary_muscles": [
+        "abs"
+      ],
+      "secondary_muscles": [
+        "hip_flexors"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "альпініст",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["abs"],
-      "secondary_muscles": ["hip_flexors", "front_delts"]
+      "primary_muscles": [
+        "abs"
+      ],
+      "secondary_muscles": [
+        "hip_flexors",
+        "front_delts"
+      ]
     },
     {
+      "category": "longevity",
+      "modality": "bodyweight",
       "name": "скакалка",
       "pattern": "core",
-      "modality": "bodyweight",
-      "category": "longevity",
-      "primary_muscles": ["calves"],
-      "secondary_muscles": ["forearms"]
+      "primary_muscles": [
+        "calves"
+      ],
+      "secondary_muscles": [
+        "forearms"
+      ]
     },
     {
+      "category": "speed",
+      "modality": "bodyweight",
       "name": "відтискання з відривом рук",
       "pattern": "press",
-      "modality": "bodyweight",
-      "category": "speed",
-      "primary_muscles": ["chest", "triceps"],
-      "secondary_muscles": ["front_delts", "abs"]
+      "primary_muscles": [
+        "chest",
+        "triceps"
+      ],
+      "secondary_muscles": [
+        "front_delts",
+        "abs"
+      ]
     }
   ]
 }

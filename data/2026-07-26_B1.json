@@ -1,23 +1,17 @@
 {
-  "date": "2026-07-26",
-  "cycle_day": "B1",
-  "kind": "training",
-  "notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
   "blocks": [
     {
-      "type": "cardio",
+      "duration_min": 10,
       "machine": "",
-      "duration_min": 10
+      "type": "cardio"
     },
     {
-      "type": "strength",
       "exercise": "взяття на груди",
+      "notes": "5 × 2, вибух; шарнірний патерн",
       "sets": [],
-      "notes": "5 × 2, вибух; шарнірний патерн"
+      "type": "strength"
     },
     {
-      "type": "metcon",
-      "format": "emom",
       "exercises": [
         {
           "name": "підтягування"
@@ -29,10 +23,11 @@
           "name": "складка"
         }
       ],
-      "notes": "EMOM 12-16 хв; короткий домен; змінити формат відносно A1 (P9)"
+      "format": "emom",
+      "notes": "EMOM 12-16 хв; короткий домен; змінити формат відносно A1 (P9)",
+      "type": "metcon"
     },
     {
-      "type": "strength",
       "exercise": "підйом на задню дельту",
       "sets": [
         {
@@ -47,11 +42,12 @@
         {
           "reps": 6
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "кисть з гантелею",
+      "notes": "хват",
       "sets": [
         {
           "reps": 6
@@ -66,10 +62,14 @@
           "reps": 6
         }
       ],
-      "notes": "хват"
+      "type": "strength"
     },
     {
       "type": "cooldown"
     }
-  ]
+  ],
+  "cycle_day": "B1",
+  "date": "2026-07-26",
+  "kind": "training",
+  "notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня."
 }

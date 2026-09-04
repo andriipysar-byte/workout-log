@@ -1,15 +1,11 @@
 {
-  "date": "2026-07-23",
-  "cycle_day": "A2",
-  "kind": "training",
   "blocks": [
     {
-      "type": "cardio",
+      "duration_min": 15,
       "machine": "",
-      "duration_min": 15
+      "type": "cardio"
     },
     {
-      "type": "strength",
       "exercise": "гіперекстензія",
       "sets": [
         {
@@ -18,17 +14,18 @@
         {
           "reps": 12
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "присід на плечах",
+      "notes": "рамп до топ-трійки + 1-2 бек-оф; найважча сесія циклу (трійки)",
       "sets": [],
-      "notes": "рамп до топ-трійки + 1-2 бек-оф; найважча сесія циклу (трійки)"
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "підтягування з вагою",
+      "notes": "вертикальна тяга",
       "sets": [
         {
           "reps": 6
@@ -43,10 +40,9 @@
           "reps": 6
         }
       ],
-      "notes": "вертикальна тяга"
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "згинання ніг стоячи",
       "sets": [
         {
@@ -64,11 +60,12 @@
         {
           "reps": 6
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "прокручування кисті з гантелею",
+      "notes": "хват",
       "sets": [
         {
           "reps": 8
@@ -83,10 +80,13 @@
           "reps": 8
         }
       ],
-      "notes": "хват"
+      "type": "strength"
     },
     {
       "type": "cooldown"
     }
-  ]
+  ],
+  "cycle_day": "A2",
+  "date": "2026-07-23",
+  "kind": "training"
 }
