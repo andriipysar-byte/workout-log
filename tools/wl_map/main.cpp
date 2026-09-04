@@ -15,6 +15,7 @@
 #include "workoutlog/muscle_activation.hpp"
 #include "workoutlog/muscle_map_svg.hpp"
 #include "workoutlog/paths.hpp"
+#include "workoutlog/store.hpp"
 
 using namespace workoutlog;
 
@@ -26,12 +27,6 @@ std::string read_file(const std::filesystem::path& path) {
     std::ostringstream ss;
     ss << in.rdbuf();
     return ss.str();
-}
-
-void write_file(const std::filesystem::path& path, const std::string& contents) {
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) throw std::runtime_error("cannot open " + path.string() + " for writing");
-    out << contents;
 }
 
 std::optional<WeightingMode> mode_from_string(const std::string& s) {
@@ -78,7 +73,7 @@ int main(int argc, char** argv) {
 
         auto scores = MuscleActivation().for_session(session, catalogue, mode);
         auto svg = muscle_map_svg::colorize(tmpl, scores);
-        write_file(out_path, svg);
+        write_file_atomic(out_path, svg);
 
         std::vector<std::pair<std::string, double>> ranked(scores.begin(), scores.end());
         std::stable_sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
