@@ -14,8 +14,6 @@
 #include "workoutlog/json.hpp"
 #include "workoutlog/store.hpp"
 
-using namespace workoutlog;
-
 namespace {
 
 std::string read_file(const std::filesystem::path& path) {
@@ -48,13 +46,13 @@ int main(int argc, char** argv) {
     for (const auto& path : paths) {
         try {
             auto original = read_file(path);
-            auto canonical = json::canonicalize(original);
+            auto canonical = workoutlog::json::canonicalize(original);
             if (canonical != original) {
                 any_changed = true;
                 if (check_only) {
                     std::cout << "would reformat: " << path.string() << "\n";
                 } else {
-                    write_file_atomic(path, canonical);
+                    workoutlog::write_file_atomic(path, canonical);
                     std::cout << "reformatted: " << path.string() << "\n";
                 }
             }
