@@ -8,6 +8,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <string_view>
 #include <vector>
 
 #include "workoutlog/catalogue.hpp"
@@ -29,7 +30,7 @@ std::string read_file(const std::filesystem::path& path) {
     return ss.str();
 }
 
-std::optional<WeightingMode> mode_from_string(const std::string& s) {
+std::optional<WeightingMode> mode_from_string(std::string_view s) {
     if (s == "set_count") return WeightingMode::set_count;
     if (s == "rep_volume") return WeightingMode::rep_volume;
     if (s == "tonnage") return WeightingMode::tonnage;
@@ -44,11 +45,19 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    std::filesystem::path session_path = argv[1];
-    WeightingMode mode = argc >= 3 ? mode_from_string(argv[2]).value_or(WeightingMode::set_count) : WeightingMode::set_count;
-
+    std::filesystem::path session_path;
+    WeightingMode mode = WeightingMode::set_count;
     std::filesystem::path repo_root;
     try {
+        session_path = argv[1];
+        if (argc >= 3) {
+            auto opt_mode = mode_from_string(argv[2]);
+            if (!opt_mode.has_value()) {
+                std::cerr << "error: unrecognised mode '" << argv[2] << "'. available modes: set_count, rep_volume, tonnage\n";
+                return 2;
+            }
+            mode = opt_mode.value();
+        }
         repo_root = paths::resolve_repo_root();
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
