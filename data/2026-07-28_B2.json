@@ -1,0 +1,82 @@
+{
+  "date": "2026-07-28",
+  "cycle_day": "B2",
+  "kind": "training",
+  "blocks": [
+    {
+      "type": "cardio",
+      "machine": "",
+      "duration_min": 15
+    },
+    {
+      "type": "strength",
+      "exercise": "гіперекстензія",
+      "sets": [
+        {
+          "reps": 12
+        },
+        {
+          "reps": 12
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "жим лежачи",
+      "sets": [],
+      "notes": "рамп до топ-сету + 1-2 бек-оф (шістки)"
+    },
+    {
+      "type": "strength",
+      "exercise": "тяга блочна сидячи",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ],
+      "notes": "горизонтальна тяга"
+    },
+    {
+      "type": "strength",
+      "exercise": "підйом на середню дельту",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "вис",
+      "sets": [],
+      "notes": "4 × макс, секунди; хват"
+    },
+    {
+      "type": "cooldown"
+    }
+  ]
+}

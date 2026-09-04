@@ -1,0 +1,144 @@
+{
+  "$comment": "Reusable cycle definitions. A cycle is an ordered list of sessions; each session is a template of planned blocks with NO weights — weights are logged per session in data/*.json. `sets_reps` and `role` are planning helpers consumed by scripts/generate_cycle.py to emit schema-valid session stubs. See docs/07-cycle.md.",
+  "cycles": [
+    {
+      "id": "hybrid-8",
+      "name": "8-session hybrid cycle",
+      "training_days": ["Tue", "Thu", "Sun"],
+      "start_date": "2026-07-21",
+      "sessions": [
+        {
+          "cycle_day": "A1",
+          "week": 1,
+          "weekday": "Tue",
+          "type": "metcon",
+          "title": "Меткон · ривок",
+          "session_notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 10 },
+            { "type": "strength", "role": "explosive", "exercise": "ривок", "notes": "4 × 3, вибух; повний відпочинок, стоп по падінню швидкості штанги (P3)" },
+            { "type": "metcon", "role": "metcon", "format": "for_time", "scheme": [21, 15, 9], "exercises": [{ "name": "трастери" }, { "name": "бьорпі" }, { "name": "перекидання м'яча" }], "notes": "21-15-9 на час; гліколітичний домен ~10-20 хв; фіксувати спліти + ЧСС по раундах" },
+            { "type": "strength", "role": "accessory", "exercise": "підйом на середню дельту", "sets_reps": [6, 6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "вис", "notes": "4 × макс, секунди; хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "A2",
+          "week": 1,
+          "weekday": "Thu",
+          "type": "heavy",
+          "title": "Важкий · присід на плечах (трійки)",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 15 },
+            { "type": "strength", "role": "warmup", "exercise": "гіперекстензія", "sets_reps": [12, 12] },
+            { "type": "strength", "role": "main", "exercise": "присід на плечах", "notes": "рамп до топ-трійки + 1-2 бек-оф; найважча сесія циклу (трійки)" },
+            { "type": "strength", "role": "accessory", "exercise": "підтягування з вагою", "sets_reps": [6, 6, 6, 6], "notes": "вертикальна тяга" },
+            { "type": "strength", "role": "accessory", "exercise": "згинання ніг стоячи", "sets_reps": [6, 6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "прокручування кисті з гантелею", "sets_reps": [8, 8, 8, 8], "notes": "хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "B1",
+          "week": 1,
+          "weekday": "Sun",
+          "type": "metcon",
+          "title": "Меткон · взяття",
+          "session_notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 10 },
+            { "type": "strength", "role": "explosive", "exercise": "взяття на груди", "notes": "5 × 2, вибух; шарнірний патерн" },
+            { "type": "metcon", "role": "metcon", "format": "emom", "exercises": [{ "name": "підтягування" }, { "name": "віджимання" }, { "name": "складка" }], "notes": "EMOM 12-16 хв; короткий домен; змінити формат відносно A1 (P9)" },
+            { "type": "strength", "role": "accessory", "exercise": "підйом на задню дельту", "sets_reps": [6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "кисть з гантелею", "sets_reps": [6, 6, 6, 6], "notes": "хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "B2",
+          "week": 2,
+          "weekday": "Tue",
+          "type": "heavy",
+          "title": "Важкий · жим лежачи (шістки)",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 15 },
+            { "type": "strength", "role": "warmup", "exercise": "гіперекстензія", "sets_reps": [12, 12] },
+            { "type": "strength", "role": "main", "exercise": "жим лежачи", "notes": "рамп до топ-сету + 1-2 бек-оф (шістки)" },
+            { "type": "strength", "role": "accessory", "exercise": "тяга блочна сидячи", "sets_reps": [6, 6, 6, 6, 6], "notes": "горизонтальна тяга" },
+            { "type": "strength", "role": "accessory", "exercise": "підйом на середню дельту", "sets_reps": [6, 6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "вис", "notes": "4 × макс, секунди; хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "C1",
+          "week": 2,
+          "weekday": "Thu",
+          "type": "metcon",
+          "title": "Меткон · протяжка",
+          "session_notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 10 },
+            { "type": "strength", "role": "explosive", "exercise": "протяжка ривкова", "notes": "5 × 2, вибух; історичні дані: 90 кг (2+2)" },
+            { "type": "metcon", "role": "metcon", "format": "amrap", "exercises": [{ "name": "гирі" }, { "name": "скакалка" }, { "name": "альпініст" }], "notes": "AMRAP 15 хв; аеробний домен" },
+            { "type": "strength", "role": "accessory", "exercise": "підйоми на носки", "sets_reps": [6, 6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "прокручування кисті з гантелею", "sets_reps": [8, 8, 8, 8], "notes": "хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "C2",
+          "week": 2,
+          "weekday": "Sun",
+          "type": "heavy",
+          "title": "Важкий · присід фронтальний (шістки)",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 15 },
+            { "type": "strength", "role": "warmup", "exercise": "гіперекстензія", "sets_reps": [12, 12] },
+            { "type": "strength", "role": "main", "exercise": "присід фронтальний", "notes": "рамп до топ-сету + 1-2 бек-оф (шістки); історія: 70/80/90/100 ×6, 110 ×3" },
+            { "type": "strength", "role": "accessory", "exercise": "румунська тяга", "sets_reps": [6, 6, 6, 6, 6], "notes": "шарнір під вагою" },
+            { "type": "strength", "role": "accessory", "exercise": "підйоми на носки", "sets_reps": [6, 6, 6, 6, 6] },
+            { "type": "strength", "role": "core", "exercise": "скручування", "sets_reps": [15, 15, 15, 15], "notes": "4 × 15-20; кор" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "D1",
+          "week": 3,
+          "weekday": "Tue",
+          "type": "metcon",
+          "title": "Меткон · поштовх / застрибування",
+          "session_notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 10 },
+            { "type": "strength", "role": "explosive", "exercise": "поштовх гирі", "notes": "5 × 3, вибух (або застрибування на тумбу)" },
+            { "type": "metcon", "role": "metcon", "format": "intervals", "exercises": [{ "name": "інтервальна робота" }], "notes": "8 × 30с робота / 90с відпочинок, ~15 хв; алактатний домен — найкоротший, зазвичай недобраний (P9)" },
+            { "type": "strength", "role": "accessory", "exercise": "підйом на середню дельту", "sets_reps": [6, 6, 6, 6] },
+            { "type": "strength", "role": "grip", "exercise": "вис", "notes": "4 × макс, секунди; хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        },
+        {
+          "cycle_day": "D2",
+          "week": 3,
+          "weekday": "Thu",
+          "type": "heavy",
+          "title": "Важкий · жим стоячи (вісімки)",
+          "blocks": [
+            { "type": "cardio", "role": "warmup", "machine": "", "duration_min": 15 },
+            { "type": "strength", "role": "warmup", "exercise": "гіперекстензія", "sets_reps": [12, 12] },
+            { "type": "strength", "role": "main", "exercise": "жим стоячи", "notes": "рамп + бек-оф (вісімки); єдиний об'ємний слот циклу (P5); рішення стоячи/нахил ще не ухвалене" },
+            { "type": "strength", "role": "accessory", "exercise": "жим на нахилі", "sets_reps": [6, 6, 6, 6], "notes": "якщо головна — жим стоячи" },
+            { "type": "strength", "role": "accessory", "exercise": "підтягування", "sets_reps": [6, 6, 6, 6], "notes": "вертикальна тяга" },
+            { "type": "strength", "role": "grip", "exercise": "кисть з гантелею", "sets_reps": [6, 6, 6, 6], "notes": "хват" },
+            { "type": "cooldown", "role": "cooldown" }
+          ]
+        }
+      ],
+      "skipped": [
+        { "week": 3, "weekday": "Sun", "reason": "Плановий пропуск: 5-денний проміжок D2 (чт) → наступний A1 (вт) = вбудований міні-делоад (P10)" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workoutlog2/schema/cycles.schema.json",
+  "title": "Cycle definitions",
+  "type": "object",
+  "required": ["cycles"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "cycles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/cycle" }
+    }
+  },
+  "$defs": {
+    "cycle": {
+      "type": "object",
+      "required": ["id", "name", "sessions"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "training_days": {
+          "type": "array",
+          "items": { "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }
+        },
+        "start_date": { "type": "string", "format": "date" },
+        "sessions": { "type": "array", "items": { "$ref": "#/$defs/session" } },
+        "skipped": { "type": "array", "items": { "$ref": "#/$defs/skip" } }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["cycle_day", "type", "blocks"],
+      "properties": {
+        "cycle_day": { "type": "string", "pattern": "^[A-F][12]$" },
+        "week": { "type": "integer" },
+        "weekday": { "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] },
+        "type": { "enum": ["metcon", "heavy"] },
+        "title": { "type": "string" },
+        "session_notes": { "type": "string" },
+        "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } }
+      }
+    },
+    "block": {
+      "type": "object",
+      "required": ["type", "role"],
+      "properties": {
+        "type": { "enum": ["cardio", "strength", "metcon", "cooldown"] },
+        "role": { "enum": ["warmup", "explosive", "main", "accessory", "grip", "core", "metcon", "cooldown"] },
+        "machine": { "type": "string" },
+        "duration_min": { "type": "number" },
+        "exercise": { "type": "string" },
+        "sets_reps": { "type": "array", "items": { "type": "integer" }, "description": "Planned reps per set; expanded to weightless sets in the stub." },
+        "format": { "enum": ["for_time", "amrap", "emom", "intervals", "ladder", "chipper"] },
+        "scheme": { "type": "array", "items": { "type": "integer" } },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "weight_kg": { "type": "number" }
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "skip": {
+      "type": "object",
+      "required": ["reason"],
+      "properties": {
+        "week": { "type": "integer" },
+        "weekday": { "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}

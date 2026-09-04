@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 520" font-family="system-ui, -apple-system, sans-serif">
+  <!-- Muscle-map template. Each muscle region carries data-muscle="<token>" and a
+       default "unworked" fill; MuscleMapSVG.colorize() recolours by data-muscle from
+       an activation map. Two figures: front (left) and back (right). Simplified
+       schematic keyed to the 19-token vocabulary — swap for a finer anatomical SVG
+       later with no code change. Placement referenced from docs/muscle_scheme.png. -->
+  <style>
+    .muscle { fill: #e8e8e3; stroke: #b9b8b1; stroke-width: 1; }
+    .silhouette { fill: #f4f4f0; stroke: #cfcec7; stroke-width: 1.5; }
+    .cap { fill: #f4f4f0; stroke: #cfcec7; stroke-width: 1.5; }
+    .lbl { fill: #52514e; font-size: 11px; font-weight: 600; }
+  </style>
+
+  <text class="lbl" x="115" y="24" text-anchor="middle">FRONT</text>
+  <text class="lbl" x="345" y="24" text-anchor="middle">BACK</text>
+
+  <!-- ================= FRONT FIGURE (centre x = 115) ================= -->
+  <g>
+    <!-- silhouette -->
+    <circle class="cap" cx="115" cy="58" r="22"/>
+    <rect class="silhouette" x="80" y="88" width="70" height="120" rx="20"/>
+    <rect class="silhouette" x="46" y="96" width="26" height="150" rx="13"/>
+    <rect class="silhouette" x="158" y="96" width="26" height="150" rx="13"/>
+    <rect class="silhouette" x="86" y="200" width="26" height="180" rx="13"/>
+    <rect class="silhouette" x="118" y="200" width="26" height="180" rx="13"/>
+    <rect class="silhouette" x="88" y="376" width="22" height="110" rx="11"/>
+    <rect class="silhouette" x="120" y="376" width="22" height="110" rx="11"/>
+
+    <!-- muscles -->
+    <ellipse class="muscle" data-muscle="front_delts" cx="74"  cy="100" rx="15" ry="13"/>
+    <ellipse class="muscle" data-muscle="front_delts" cx="156" cy="100" rx="15" ry="13"/>
+    <path class="muscle" data-muscle="chest" d="M84 108 q31 -14 62 0 v22 q-31 12 -62 0 z"/>
+    <ellipse class="muscle" data-muscle="biceps" cx="55"  cy="150" rx="11" ry="26"/>
+    <ellipse class="muscle" data-muscle="biceps" cx="175" cy="150" rx="11" ry="26"/>
+    <ellipse class="muscle" data-muscle="forearms" cx="55"  cy="212" rx="10" ry="26"/>
+    <ellipse class="muscle" data-muscle="forearms" cx="175" cy="212" rx="10" ry="26"/>
+    <rect class="muscle" data-muscle="abs" x="100" y="140" width="30" height="60" rx="7"/>
+    <path class="muscle" data-muscle="obliques" d="M88 146 q-6 30 8 52 l6 -4 q-10 -24 -6 -48 z"/>
+    <path class="muscle" data-muscle="obliques" d="M142 146 q6 30 -8 52 l-6 -4 q10 -24 6 -48 z"/>
+    <ellipse class="muscle" data-muscle="quads" cx="97"  cy="300" rx="14" ry="52"/>
+    <ellipse class="muscle" data-muscle="quads" cx="133" cy="300" rx="14" ry="52"/>
+    <ellipse class="muscle" data-muscle="adductors" cx="115" cy="290" rx="9" ry="34"/>
+    <ellipse class="muscle" data-muscle="hip_flexors" cx="103" cy="250" rx="8" ry="12"/>
+    <ellipse class="muscle" data-muscle="hip_flexors" cx="127" cy="250" rx="8" ry="12"/>
+    <ellipse class="muscle" data-muscle="calves" cx="99"  cy="430" rx="9" ry="34"/>
+    <ellipse class="muscle" data-muscle="calves" cx="131" cy="430" rx="9" ry="34"/>
+  </g>
+
+  <!-- ================= BACK FIGURE (centre x = 345) ================= -->
+  <g>
+    <!-- silhouette -->
+    <circle class="cap" cx="345" cy="58" r="22"/>
+    <rect class="silhouette" x="310" y="88" width="70" height="120" rx="20"/>
+    <rect class="silhouette" x="276" y="96" width="26" height="150" rx="13"/>
+    <rect class="silhouette" x="388" y="96" width="26" height="150" rx="13"/>
+    <rect class="silhouette" x="316" y="200" width="26" height="180" rx="13"/>
+    <rect class="silhouette" x="348" y="200" width="26" height="180" rx="13"/>
+    <rect class="silhouette" x="318" y="376" width="22" height="110" rx="11"/>
+    <rect class="silhouette" x="350" y="376" width="22" height="110" rx="11"/>
+
+    <!-- muscles -->
+    <ellipse class="muscle" data-muscle="rear_delts" cx="304" cy="100" rx="14" ry="12"/>
+    <ellipse class="muscle" data-muscle="rear_delts" cx="386" cy="100" rx="14" ry="12"/>
+    <ellipse class="muscle" data-muscle="side_delts" cx="292" cy="108" rx="9" ry="12"/>
+    <ellipse class="muscle" data-muscle="side_delts" cx="398" cy="108" rx="9" ry="12"/>
+    <path class="muscle" data-muscle="traps" d="M320 92 q25 -10 50 0 l-16 34 h-18 z"/>
+    <path class="muscle" data-muscle="rhomboids" d="M328 128 h34 v22 l-17 6 -17 -6 z"/>
+    <path class="muscle" data-muscle="lats" d="M320 132 q-10 34 6 60 l14 -8 q-12 -26 -8 -50 z"/>
+    <path class="muscle" data-muscle="lats" d="M370 132 q10 34 -6 60 l-14 -8 q12 -26 8 -50 z"/>
+    <rect class="muscle" data-muscle="spinal_erectors" x="336" y="150" width="18" height="52" rx="6"/>
+    <ellipse class="muscle" data-muscle="triceps" cx="285" cy="150" rx="11" ry="26"/>
+    <ellipse class="muscle" data-muscle="triceps" cx="405" cy="150" rx="11" ry="26"/>
+    <path class="muscle" data-muscle="glutes" d="M326 212 q19 -12 38 0 v24 q-19 14 -38 0 z"/>
+    <ellipse class="muscle" data-muscle="hamstrings" cx="327" cy="308" rx="13" ry="50"/>
+    <ellipse class="muscle" data-muscle="hamstrings" cx="363" cy="308" rx="13" ry="50"/>
+    <ellipse class="muscle" data-muscle="calves" cx="329" cy="430" rx="9" ry="34"/>
+    <ellipse class="muscle" data-muscle="calves" cx="361" cy="430" rx="9" ry="34"/>
+  </g>
+</svg>

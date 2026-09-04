@@ -1,0 +1,78 @@
+{
+  "date": "2026-07-30",
+  "cycle_day": "C1",
+  "kind": "training",
+  "notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
+  "blocks": [
+    {
+      "type": "cardio",
+      "machine": "",
+      "duration_min": 10
+    },
+    {
+      "type": "strength",
+      "exercise": "протяжка ривкова",
+      "sets": [],
+      "notes": "5 × 2, вибух; історичні дані: 90 кг (2+2)"
+    },
+    {
+      "type": "metcon",
+      "format": "amrap",
+      "exercises": [
+        {
+          "name": "гирі"
+        },
+        {
+          "name": "скакалка"
+        },
+        {
+          "name": "альпініст"
+        }
+      ],
+      "notes": "AMRAP 15 хв; аеробний домен"
+    },
+    {
+      "type": "strength",
+      "exercise": "підйоми на носки",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "прокручування кисті з гантелею",
+      "sets": [
+        {
+          "reps": 8
+        },
+        {
+          "reps": 8
+        },
+        {
+          "reps": 8
+        },
+        {
+          "reps": 8
+        }
+      ],
+      "notes": "хват"
+    },
+    {
+      "type": "cooldown"
+    }
+  ]
+}

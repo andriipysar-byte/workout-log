@@ -1,0 +1,102 @@
+{
+  "date": "2026-06-23",
+  "cycle_day": "C2",
+  "start_time": "7:45",
+  "kind": "training",
+  "notes": "Heavy day. Front squat ramp to 110. Transcribed from paper journal; some weights uncertain.",
+  "blocks": [
+    {
+      "type": "cardio",
+      "machine": "гребля",
+      "duration_min": 10,
+      "distance_m": 1673,
+      "end_time": "7:53"
+    },
+    {
+      "type": "strength",
+      "exercise": "гіперекстензія",
+      "sets": [
+        { "reps": 12, "weight_kg": 15 },
+        { "reps": 12, "weight_kg": 28 }
+      ],
+      "end_time": "8:02"
+    },
+    {
+      "type": "strength",
+      "exercise": "присід фронтальний",
+      "start_time": "8:05",
+      "notes": "Ramp to top set. Final set dropped to 3 reps — reps written above the weight on paper.",
+      "sets": [
+        { "reps": 6, "weight_kg": 70, "rep_band": "base" },
+        { "reps": 6, "weight_kg": 80, "rep_band": "base" },
+        { "reps": 6, "weight_kg": 90, "rep_band": "base" },
+        { "reps": 6, "weight_kg": 100, "rep_band": "base" },
+        { "reps": 3, "weight_kg": 110, "rep_band": "heavy" }
+      ],
+      "end_time": "8:28"
+    },
+    {
+      "type": "strength",
+      "exercise": "згинання ніг стоячи",
+      "sets": [
+        { "reps": 6, "weight_kg": 25 },
+        { "reps": 6, "weight_kg": 30 },
+        { "reps": 6, "weight_kg": 35 },
+        { "reps": 6, "weight_kg": 40 },
+        { "reps": 6, "weight_kg": 45 }
+      ],
+      "end_time": "8:36"
+    },
+    {
+      "type": "strength",
+      "exercise": "підйоми на носки",
+      "sets": [
+        { "reps": 6, "weight_kg": 40 },
+        { "reps": 6, "weight_kg": 50 },
+        { "reps": 6, "weight_kg": 55 },
+        { "reps": 6, "weight_kg": 60 },
+        { "reps": 6, "weight_kg": 65 }
+      ],
+      "end_time": "8:46"
+    },
+    {
+      "type": "strength",
+      "exercise": "підйоми на середню дельту",
+      "sets": [
+        { "reps": 6, "weight_kg": 8 },
+        { "reps": 6, "weight_kg": 10 },
+        { "reps": 6, "weight_kg": 12 },
+        { "reps": 6, "weight_kg": 14 },
+        { "reps": 6, "weight_kg": 16 }
+      ],
+      "end_time": "8:55"
+    },
+    {
+      "type": "strength",
+      "exercise": "вис",
+      "notes": "Superset with wrist rotations (bracketed together on paper).",
+      "sets": [
+        { "duration_sec": 40 },
+        { "duration_sec": 38 },
+        { "duration_sec": 36 },
+        { "duration_sec": 30 }
+      ],
+      "end_time": "9:09"
+    },
+    {
+      "type": "strength",
+      "exercise": "прокручування кисті з гантелею",
+      "sets": [
+        { "reps": 8, "weight_kg": 8 },
+        { "reps": 8, "weight_kg": 10 },
+        { "reps": 8, "weight_kg": 12 },
+        { "reps": 8, "weight_kg": 14 }
+      ],
+      "end_time": "9:09"
+    },
+    {
+      "type": "cooldown",
+      "end_time": "9:19"
+    }
+  ]
+}

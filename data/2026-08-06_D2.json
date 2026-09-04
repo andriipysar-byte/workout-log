@@ -1,0 +1,90 @@
+{
+  "date": "2026-08-06",
+  "cycle_day": "D2",
+  "kind": "training",
+  "blocks": [
+    {
+      "type": "cardio",
+      "machine": "",
+      "duration_min": 15
+    },
+    {
+      "type": "strength",
+      "exercise": "гіперекстензія",
+      "sets": [
+        {
+          "reps": 12
+        },
+        {
+          "reps": 12
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "жим стоячи",
+      "sets": [],
+      "notes": "рамп + бек-оф (вісімки); єдиний об'ємний слот циклу (P5); рішення стоячи/нахил ще не ухвалене"
+    },
+    {
+      "type": "strength",
+      "exercise": "жим на нахилі",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ],
+      "notes": "якщо головна — жим стоячи"
+    },
+    {
+      "type": "strength",
+      "exercise": "підтягування",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ],
+      "notes": "вертикальна тяга"
+    },
+    {
+      "type": "strength",
+      "exercise": "кисть з гантелею",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ],
+      "notes": "хват"
+    },
+    {
+      "type": "cooldown"
+    }
+  ]
+}

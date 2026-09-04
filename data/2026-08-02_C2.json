@@ -1,0 +1,95 @@
+{
+  "date": "2026-08-02",
+  "cycle_day": "C2",
+  "kind": "training",
+  "blocks": [
+    {
+      "type": "cardio",
+      "machine": "",
+      "duration_min": 15
+    },
+    {
+      "type": "strength",
+      "exercise": "гіперекстензія",
+      "sets": [
+        {
+          "reps": 12
+        },
+        {
+          "reps": 12
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "присід фронтальний",
+      "sets": [],
+      "notes": "рамп до топ-сету + 1-2 бек-оф (шістки); історія: 70/80/90/100 ×6, 110 ×3"
+    },
+    {
+      "type": "strength",
+      "exercise": "румунська тяга",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ],
+      "notes": "шарнір під вагою"
+    },
+    {
+      "type": "strength",
+      "exercise": "підйоми на носки",
+      "sets": [
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        },
+        {
+          "reps": 6
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "exercise": "скручування",
+      "sets": [
+        {
+          "reps": 15
+        },
+        {
+          "reps": 15
+        },
+        {
+          "reps": 15
+        },
+        {
+          "reps": 15
+        }
+      ],
+      "notes": "4 × 15-20; кор"
+    },
+    {
+      "type": "cooldown"
+    }
+  ]
+}
