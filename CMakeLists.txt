@@ -5,7 +5,7 @@ project(WorkoutLog2 VERSION 0.1.0 LANGUAGES CXX)
 # inside a conservative C++20 subset: no <format>, no <expected>, no <chrono> calendar
 # types, no std::regex, no unguarded floating-point std::from_chars. libc++ ships all of
 # those late or not at all, and none of them are needed here.
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
