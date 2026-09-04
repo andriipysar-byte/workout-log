@@ -1,0 +1,137 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Unix Makefiles"
+    },
+    {
+      "name": "gcc-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "clang-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "prof-asan-ubsan",
+      "hidden": true,
+      "description": "ASan + UBSan (plus ASan's bundled LSan), -O1 -- heap/stack/use-after-free, leaks, and undefined behaviour in one tree.",
+      "cacheVariables": {
+        "WL_SANITIZE_ASAN": "ON",
+        "WL_SANITIZE_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "prof-tsan",
+      "hidden": true,
+      "description": "TSan, -O1 -- data races and threading errors. Kept separate from asan-ubsan: its runtime is incompatible with ASan. The wl_verify ctest test runs under `setarch -R` where the platform allows it, because TSan needs a fixed memory layout and aborts with 'unexpected memory mapping' under a high-ASLR kernel; configure detects that (misc/cmake/Sanitize.cmake).",
+      "cacheVariables": {
+        "WL_SANITIZE_TSAN": "ON"
+      }
+    },
+    {
+      "name": "gcc",
+      "displayName": "gcc (default, ./builds/gcc)",
+      "inherits": "gcc-base",
+      "binaryDir": "${sourceDir}/builds/gcc"
+    },
+    {
+      "name": "clang",
+      "displayName": "clang (./builds/clang)",
+      "inherits": "clang-base",
+      "binaryDir": "${sourceDir}/builds/clang"
+    },
+    {
+      "name": "gcc-asan-ubsan",
+      "displayName": "gcc + ASan/UBSan/LSan (./builds/gcc-asan-ubsan)",
+      "inherits": ["prof-asan-ubsan", "gcc-base"],
+      "binaryDir": "${sourceDir}/builds/gcc-asan-ubsan"
+    },
+    {
+      "name": "gcc-tsan",
+      "displayName": "gcc + TSan (./builds/gcc-tsan)",
+      "inherits": ["prof-tsan", "gcc-base"],
+      "binaryDir": "${sourceDir}/builds/gcc-tsan"
+    },
+    {
+      "name": "clang-asan-ubsan",
+      "displayName": "clang + ASan/UBSan/LSan (./builds/clang-asan-ubsan)",
+      "inherits": ["prof-asan-ubsan", "clang-base"],
+      "binaryDir": "${sourceDir}/builds/clang-asan-ubsan"
+    },
+    {
+      "name": "clang-tsan",
+      "displayName": "clang + TSan (./builds/clang-tsan)",
+      "inherits": ["prof-tsan", "clang-base"],
+      "binaryDir": "${sourceDir}/builds/clang-tsan"
+    }
+  ],
+  "buildPresets": [
+    { "name": "gcc", "configurePreset": "gcc" },
+    { "name": "clang", "configurePreset": "clang" },
+    { "name": "gcc-asan-ubsan", "configurePreset": "gcc-asan-ubsan" },
+    { "name": "gcc-tsan", "configurePreset": "gcc-tsan" },
+    { "name": "clang-asan-ubsan", "configurePreset": "clang-asan-ubsan" },
+    { "name": "clang-tsan", "configurePreset": "clang-tsan" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "test-asan-ubsan",
+      "hidden": true,
+      "inherits": "test-base",
+      "environment": {
+        "ASAN_OPTIONS": "detect_container_overflow=0:detect_leaks=1:halt_on_error=1"
+      }
+    },
+    {
+      "name": "test-tsan",
+      "hidden": true,
+      "inherits": "test-base",
+      "environment": {
+        "TSAN_OPTIONS": "halt_on_error=1"
+      }
+    },
+    { "name": "gcc", "configurePreset": "gcc", "inherits": "test-base" },
+    { "name": "clang", "configurePreset": "clang", "inherits": "test-base" },
+    {
+      "name": "gcc-asan-ubsan",
+      "configurePreset": "gcc-asan-ubsan",
+      "inherits": "test-asan-ubsan"
+    },
+    {
+      "name": "gcc-tsan",
+      "configurePreset": "gcc-tsan",
+      "inherits": "test-tsan"
+    },
+    {
+      "name": "clang-asan-ubsan",
+      "configurePreset": "clang-asan-ubsan",
+      "inherits": "test-asan-ubsan"
+    },
+    {
+      "name": "clang-tsan",
+      "configurePreset": "clang-tsan",
+      "inherits": "test-tsan"
+    }
+  ]
+}

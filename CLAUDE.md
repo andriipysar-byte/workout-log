@@ -15,3 +15,17 @@ clear names over comments. When in doubt, leave it out.
 - Run the app: `WORKOUTLOG_DATA=../data swift run WorkoutLogApp`.
 - Data files in `data/` are the source of truth (ADR-001); the core carries all
   domain logic and the SwiftUI layer stays pure presentation (ADR-004).
+
+### C++ core (Linux/Windows port in progress)
+
+The domain core is being ported to C++20 under `core/` so Linux/Windows can share it
+(the Swift core above is still what macOS runs today — the two aren't wired together
+yet). No Swift toolchain is required for this half:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j
+./build/bin/wl_verify                 # acceptance gate; must print ALL CHECKS PASSED
+./build/bin/wl_map <session.json> [set_count|rep_volume|tonnage] [out.svg]
+./build/bin/wl_fmt [--check] <path.json...>   # canonical JSON writer, data/ already reformatted
+```

@@ -1,0 +1,68 @@
+# WorkoutLog2 clang-tidy checks. Adapted from ../remoteguard/CERAMIC/.clang-tidy.
+#
+# Deliberately staged: groups are onboarded one at a time so the diagnostic count
+# stays readable and each new backlog is attributable. The groups still off are
+# listed in the roadmap below -- take the top one, add it here, run `tidy`, and
+# fix (or explicitly exclude) what it finds before moving to the next.
+#
+# Run via the `tidy` target (report only). WarningsAsErrors is left empty so
+# `tidy` reports without failing; a CI gate can override it with
+# `--warnings-as-errors='*'` on the clang-tidy command line.
+#
+# NOTE: keep `-*` first so nothing is inherited from a parent .clang-tidy; every
+# active group is then added explicitly below it.
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  -modernize-concat-nested-namespaces,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  -modernize-avoid-bind,
+  -modernize-use-auto,
+  -modernize-return-braced-init-list,
+
+# --- Roadmap: enable one group at a time, fix, then move to the next ----------
+#
+# Order is rough priority (safety first, then idioms, then style). To turn a
+# group on, move its line up into the `Checks:` block above (before the blank
+# line) and re-run `tidy`. The per-check `-...` exclusions under each group are
+# a starting guess, carried over from CERAMIC's own onboarding -- re-check them
+# against this codebase's actual `tidy` output rather than trusting them blind.
+#
+#   cppcoreguidelines-*        # ownership, bounds, type-safety
+#     -cppcoreguidelines-avoid-magic-numbers
+#     -cppcoreguidelines-avoid-c-arrays
+#     -cppcoreguidelines-pro-bounds-array-to-pointer-decay
+#     -cppcoreguidelines-pro-type-vararg
+#
+#   misc-*
+#     -misc-non-private-member-variables-in-classes
+#     -misc-include-cleaner
+#
+#   readability-*              # style; highest churn, lowest urgency -- do last
+#     -readability-identifier-length
+#     -readability-magic-numbers
+#     -readability-function-cognitive-complexity
+# ------------------------------------------------------------------------------
+#
+# Why the modernize exclusions above are off:
+#
+#   concat-nested-namespaces  every file uses `namespace workoutlog { ... }` or
+#                             `namespace workoutlog::json { ... }` already, but
+#                             a handful of nested forms remain -- style-only churn.
+#   avoid-bind                std::bind isn't used in this codebase; excluded
+#                             defensively in case that changes.
+#   use-auto                  style churn, no safety argument.
+#   return-braced-init-list   same.
+
+WarningsAsErrors: ''
+
+# Only diagnose first-party headers. Anchored to the project's own top-level
+# source dirs so system headers, fetched-dependency headers (build*/_deps/...)
+# and vendored SVG/font assets don't flood the report.
+HeaderFilterRegex: '/(core|tools|capi|ui)/(?!.*/(build|_deps)/).*\.(h|hpp|hh|hxx)$'
+
+FormatStyle: file
