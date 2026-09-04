@@ -18,4 +18,11 @@ namespace workoutlog::paths {
 // Throws std::runtime_error listing every attempt if none succeed.
 std::filesystem::path resolve_repo_root(const std::string& hint = {});
 
+// The two asset paths under a resolved repo root, spelled out once. Previously
+// duplicated across tools/wl_map/main.cpp and tools/wl_verify/main.cpp; the
+// SDL3/ImGui UI is the third site to need them, which is the signal to extract
+// them here instead of copying the literals again.
+std::filesystem::path catalogue_path(const std::filesystem::path& repo_root);
+std::filesystem::path muscle_map_template_path(const std::filesystem::path& repo_root);
+
 } // namespace workoutlog::paths

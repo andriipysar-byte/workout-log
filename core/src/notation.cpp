@@ -3,8 +3,10 @@
 #include <cctype>
 #include <cerrno>
 #include <charconv>
+#include <cmath>
 #include <cstdlib>
 #include <optional>
+#include <sstream>
 #include <utility>
 
 #include "workoutlog/utf8.hpp"
@@ -13,6 +15,45 @@ namespace workoutlog::notation {
 
 using workoutlog::utf8::is_ascii_digit;
 using workoutlog::utf8::is_trim_whitespace;
+
+// Strict numeric parsing shared with the UI (declared in notation.hpp): std::stod
+// and the pre-C++20 std::strtod path both accept trailing garbage, leading/trailing
+// whitespace and hex floats, which Swift's Double(String) rejects, so parsing this
+// grammar (and the UI's optional-numeric fields) needs the stricter guard below.
+// std::from_chars gives that directly; the conservative subset (see CMakeLists.txt)
+// keeps the strtod fallback because Apple libc++ has no floating-point from_chars.
+std::optional<double> parse_double_strict(std::string_view s) {
+    if (s.empty()) return std::nullopt;
+#if defined(__cpp_lib_to_chars)
+    double v{};
+    auto res = std::from_chars(s.data(), s.data() + s.size(), v);
+    if (res.ec != std::errc{} || res.ptr != s.data() + s.size()) return std::nullopt;
+    return v;
+#else
+    for (char c : s) {
+        bool ok = std::isdigit(static_cast<unsigned char>(c)) || c == '.' || c == '-' || c == '+';
+        if (!ok) return std::nullopt;
+    }
+    errno = 0;
+    char* end = nullptr;
+    const std::string owned(s); // strtod needs a null terminator; a string_view has none
+    double v = std::strtod(owned.c_str(), &end);
+    if (end != owned.c_str() + owned.size() || errno == ERANGE) return std::nullopt;
+    return v;
+#endif
+}
+
+std::optional<int> parse_int_strict(std::string_view s) {
+    if (s.empty()) return std::nullopt;
+    size_t start = (s[0] == '+' || s[0] == '-') ? 1 : 0;
+    if (start == s.size()) return std::nullopt;
+    for (size_t i = start; i < s.size(); i++)
+        if (!std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+    int v{};
+    auto res = std::from_chars(s.data(), s.data() + s.size(), v);
+    if (res.ec != std::errc{} || res.ptr != s.data() + s.size()) return std::nullopt;
+    return v;
+}
 
 namespace {
 
@@ -28,41 +69,6 @@ bool contains_any(const std::u32string& s, const std::u32string& set) {
 }
 
 std::string narrow(const std::u32string& s) { return workoutlog::utf8::from_u32(s); }
-
-// Swift's Double(String) rejects trailing garbage, leading/trailing whitespace and
-// hex floats; std::stod accepts all three. std::from_chars is strict in the way we
-// need, but Apple libc++ has no floating-point overload, so it's guarded.
-std::optional<double> parse_double_strict(const std::string& s) {
-    if (s.empty()) return std::nullopt;
-#if defined(__cpp_lib_to_chars)
-    double v{};
-    auto res = std::from_chars(s.data(), s.data() + s.size(), v);
-    if (res.ec != std::errc{} || res.ptr != s.data() + s.size()) return std::nullopt;
-    return v;
-#else
-    for (char c : s) {
-        bool ok = std::isdigit(static_cast<unsigned char>(c)) || c == '.' || c == '-' || c == '+';
-        if (!ok) return std::nullopt;
-    }
-    errno = 0;
-    char* end = nullptr;
-    double v = std::strtod(s.c_str(), &end);
-    if (end != s.c_str() + s.size() || errno == ERANGE) return std::nullopt;
-    return v;
-#endif
-}
-
-std::optional<int> parse_int_strict(const std::string& s) {
-    if (s.empty()) return std::nullopt;
-    size_t start = (s[0] == '+' || s[0] == '-') ? 1 : 0;
-    if (start == s.size()) return std::nullopt;
-    for (size_t i = start; i < s.size(); i++)
-        if (!std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
-    int v{};
-    auto res = std::from_chars(s.data(), s.data() + s.size(), v);
-    if (res.ec != std::errc{} || res.ptr != s.data() + s.size()) return std::nullopt;
-    return v;
-}
 
 // Swift: `\(\s*\d+\s*\)\s*$` -- trailing "(" ws* digits ws* ")" ws*, anchored at the
 // end of the string. On match, extracts the digits and erases the whole suffix.
@@ -270,6 +276,55 @@ ParsedSets parse_strength_sets(std::string_view raw) {
     }
     if (sets.empty() && warnings.empty()) warnings.push_back("could not parse: " + narrow(line));
     return {sets, warnings};
+}
+
+namespace {
+
+// A NaN/inf or a magnitude beyond exact double-to-int64 representation would make
+// llround's result meaningless; the display falls back to "?" rather than feeding
+// that through a narrowing cast (AGENTS.md 2.6). Untrusted input (a hand-edited
+// session file) is the only realistic way to reach that branch.
+std::optional<long long> round_for_display(double v) {
+    if (!std::isfinite(v) || std::fabs(v) >= 9007199254740992.0) return std::nullopt;
+    return std::llround(v);
+}
+
+} // namespace
+
+std::string format_set(const WorkSet& set) {
+    std::ostringstream out;
+
+    if (set.cluster.has_value()) {
+        const auto& cluster = *set.cluster;
+        for (size_t i = 0; i < cluster.size(); i++) {
+            if (i > 0) out << '+';
+            out << cluster[i];
+        }
+        if (set.total_reps.has_value()) out << " (" << *set.total_reps << ")";
+        return out.str();
+    }
+
+    if (set.duration_sec.has_value()) {
+        if (auto seconds = round_for_display(*set.duration_sec)) {
+            out << *seconds << 'c';
+        } else {
+            out << "?c";
+        }
+        return out.str();
+    }
+
+    if (set.reps.has_value()) out << *set.reps << "×";
+    if (set.weight_kg.has_value()) {
+        if (auto weight = round_for_display(*set.weight_kg)) {
+            out << *weight;
+        } else {
+            out << "?";
+        }
+    } else {
+        out << "bw";
+    }
+    if (set.is_backoff.has_value() && *set.is_backoff) out << '*';
+    return out.str();
 }
 
 } // namespace workoutlog::notation

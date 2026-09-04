@@ -6,6 +6,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <set>
 #include <sstream>
 #include <string>
@@ -134,7 +135,7 @@ int main() {
     std::optional<Catalogue> catalogue;
     std::cout << "Catalogue (exercises.json):\n";
     try {
-        auto cat = json::decode_catalogue(read_file(repo_root / "exercises.json"));
+        auto cat = json::decode_catalogue(read_file(paths::catalogue_path(repo_root)));
         catalogue = cat;
 
         check(!cat.exercises.empty(), "catalogue non-empty (" + std::to_string(cat.exercises.size()) + " exercises)");
@@ -232,7 +233,7 @@ int main() {
     std::cout << "MuscleMapSVG colorizer:\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        auto tmpl = read_file(repo_root / "app/Resources/muscle-map.svg");
+        auto tmpl = read_file(paths::muscle_map_template_path(repo_root));
 
         std::set<std::string> used_muscles;
         for (const auto& ex : catalogue->exercises) {
@@ -383,6 +384,27 @@ int main() {
             round_ok = false;
         }
         check(round_ok, "parsed sets survive a JSON round-trip in a session");
+
+        // format_set is notation::parse_strength_sets's inverse (core/src/notation.cpp);
+        // these are the same shapes the parser test above exercises, checked both ways.
+        check(notation::format_set(ramp.sets[0]) == "6×70", "format_set: reps x weight");
+        check(notation::format_set(backoff.sets.back()) == "6×30*", "format_set: back-off set gets a trailing '*'");
+        check(notation::format_set(cluster.sets[0]) == "5+5+4+3+3 (20)", "format_set: cluster round-trips with its total");
+        check(notation::format_set(cluster2.sets[0]) == "4+4+3+2+2+2+2+1 (20)",
+              "format_set: cluster round-trips with a sum-derived total");
+        check(notation::format_set(holds.sets[0]) == "54c", "format_set: timed hold");
+
+        WorkSet bodyweight{};
+        bodyweight.reps = 8;
+        check(notation::format_set(bodyweight) == "8×bw", "format_set: no weight formats as bw");
+
+        // Untrusted input (a hand-edited file) can carry a non-finite weight; format_set
+        // must degrade to "?" rather than feed it through round_for_display's narrowing
+        // cast (AGENTS.md 1.2.1/1.2.2/2.6) -- the failure path, not just the happy path.
+        WorkSet non_finite{};
+        non_finite.reps = 3;
+        non_finite.weight_kg = std::numeric_limits<double>::quiet_NaN();
+        check(notation::format_set(non_finite) == "3×?", "format_set: non-finite weight degrades to '?', doesn't throw");
     }
 
     // ---- 7. Ukrainian case-folding (landmine: naive +0x20 fold breaks these) ---

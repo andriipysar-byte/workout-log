@@ -69,3 +69,4 @@ build
 
 # CMakePresets.json binary dirs
 builds/
+build-ui

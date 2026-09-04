@@ -59,8 +59,8 @@ int main(int argc, char** argv) {
         std::cerr << e.what() << "\n";
         return 1;
     }
-    auto template_path = repo_root / "app/Resources/muscle-map.svg";
-    auto catalogue_path = repo_root / "exercises.json";
+    auto template_path = paths::muscle_map_template_path(repo_root);
+    auto catalogue_path = paths::catalogue_path(repo_root);
 
     std::filesystem::path out_path;
     if (argc >= 4) {

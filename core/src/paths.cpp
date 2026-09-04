@@ -77,4 +77,12 @@ std::filesystem::path resolve_repo_root(const std::string& hint) {
     throw std::runtime_error(msg.str());
 }
 
+std::filesystem::path catalogue_path(const std::filesystem::path& repo_root) {
+    return repo_root / "exercises.json";
+}
+
+std::filesystem::path muscle_map_template_path(const std::filesystem::path& repo_root) {
+    return repo_root / "app/Resources/muscle-map.svg";
+}
+
 } // namespace workoutlog::paths

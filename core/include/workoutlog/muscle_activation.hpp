@@ -18,6 +18,15 @@ enum class WeightingMode {
     tonnage,    // sets x reps x weight -- 0 for bodyweight/timed work
 };
 
+// Declaration order, for the UI's mode picker to iterate -- the equivalent of
+// Swift's WeightingMode.allCases, and the same pattern as kMuscleGroupOrder in
+// muscle_group.hpp.
+inline constexpr WeightingMode kWeightingModeOrder[] = {
+    WeightingMode::set_count,
+    WeightingMode::rep_volume,
+    WeightingMode::tonnage,
+};
+
 std::string to_string(WeightingMode);
 std::string label(WeightingMode);
 
