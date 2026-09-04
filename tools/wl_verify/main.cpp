@@ -246,9 +246,9 @@ int main() {
         check(missing.empty(), "SVG template covers every catalogue muscle (missing: " + join_sorted(missing) + ")");
 
         auto svg = muscle_map_svg::colorize(tmpl, {{"quads", 1.0}, {"chest", 0.4}});
-        check(svg.find("data-muscle=\"quads\" style=\"fill:#0d366b\"") != std::string::npos,
+        check(svg.find(R"(data-muscle="quads" style="fill:#0d366b")") != std::string::npos,
               "peak muscle (quads=1.0) filled with high colour");
-        check(svg.find("data-muscle=\"forearms\" style=\"fill:#e8e8e3\"") != std::string::npos,
+        check(svg.find(R"(data-muscle="forearms" style="fill:#e8e8e3")") != std::string::npos,
               "unworked muscle filled with zero colour");
         check(muscle_map_svg::color(0, "#86b6ef", "#0d366b", "#e8e8e3") == "#e8e8e3", "score 0 -> zero colour");
         check(muscle_map_svg::color(0.5, "#86b6ef", "#0d366b", "#e8e8e3") == "#4a76ad",
@@ -372,7 +372,7 @@ int main() {
         Session session;
         session.date = "2026-07-21";
         session.cycle_day = "A1";
-        session.blocks.push_back(block);
+        session.blocks.emplace_back(std::move(block));
         bool round_ok = false;
         try {
             auto data = json::encode_session(session);

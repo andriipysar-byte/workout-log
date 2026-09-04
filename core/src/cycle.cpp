@@ -26,6 +26,7 @@ std::vector<std::string> block_exercise_names(const Block& block) {
     if (const auto* sb = std::get_if<StrengthBlock>(&block)) return {sb->exercise};
     if (const auto* mb = std::get_if<MetconBlock>(&block)) {
         std::vector<std::string> names;
+        names.reserve(mb->exercises.size());
         for (const auto& e : mb->exercises) names.push_back(e.name);
         return names;
     }
@@ -93,8 +94,9 @@ Index build_index(const SessionStore& store, const std::optional<Catalogue>& cat
                 latest_session_by_day[info.cycle_day] = std::move(s);
             }
         } catch (...) {
-            // A parse failure still gets a calendar cell (from the filename alone);
-            // it just doesn't feed the cycle matrix or carry a muscle group.
+            // Intentionally empty: a parse failure still gets a calendar cell (from
+            // the filename alone); it just doesn't feed the cycle matrix or carry a
+            // muscle group.
         }
 
         idx.calendar[date] = info;

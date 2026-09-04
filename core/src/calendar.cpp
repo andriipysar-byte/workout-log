@@ -1,5 +1,7 @@
 #include "workoutlog/calendar.hpp"
 
+#include <array>
+
 namespace workoutlog::calendar {
 
 namespace {
@@ -27,9 +29,9 @@ int weekday_sun1(int year, int month, int day) {
 }
 
 int days_in_month(int year, int month) {
-    static constexpr int kDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    static constexpr std::array<int, 12> kDays = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if (month == 2 && is_leap(year)) return 29;
-    return kDays[month - 1];
+    return kDays.at(static_cast<size_t>(month - 1)); // bounds-checked: month is caller-supplied
 }
 
 std::vector<std::optional<int>> month_cells(int year, int month, int first_weekday) {
@@ -38,7 +40,7 @@ std::vector<std::optional<int>> month_cells(int year, int month, int first_weekd
 
     std::vector<std::optional<int>> cells(static_cast<size_t>(leading), std::nullopt);
     int n = days_in_month(year, month);
-    for (int day = 1; day <= n; day++) cells.push_back(day);
+    for (int day = 1; day <= n; day++) cells.emplace_back(day);
     return cells;
 }
 

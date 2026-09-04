@@ -3,7 +3,9 @@
 # Deliberately staged: groups are onboarded one at a time so the diagnostic count
 # stays readable and each new backlog is attributable. The groups still off are
 # listed in the roadmap below -- take the top one, add it here, run `tidy`, and
-# fix (or explicitly exclude) what it finds before moving to the next.
+# fix (or explicitly exclude, backed by the actual `tidy` output, not a guess --
+# see "Why the cppcoreguidelines exclusions are off" below for the model to follow)
+# what it finds before moving to the next.
 #
 # Run via the `tidy` target (report only). WarningsAsErrors is left empty so
 # `tidy` reports without failing; a CI gate can override it with
@@ -14,6 +16,10 @@
 Checks: >
   -*,
   clang-analyzer-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   bugprone-*,
   performance-*,
   modernize-*,
@@ -28,15 +34,7 @@ Checks: >
 #
 # Order is rough priority (safety first, then idioms, then style). To turn a
 # group on, move its line up into the `Checks:` block above (before the blank
-# line) and re-run `tidy`. The per-check `-...` exclusions under each group are
-# a starting guess, carried over from CERAMIC's own onboarding -- re-check them
-# against this codebase's actual `tidy` output rather than trusting them blind.
-#
-#   cppcoreguidelines-*        # ownership, bounds, type-safety
-#     -cppcoreguidelines-avoid-magic-numbers
-#     -cppcoreguidelines-avoid-c-arrays
-#     -cppcoreguidelines-pro-bounds-array-to-pointer-decay
-#     -cppcoreguidelines-pro-type-vararg
+# line) and re-run `tidy`.
 #
 #   misc-*
 #     -misc-non-private-member-variables-in-classes
@@ -48,17 +46,59 @@ Checks: >
 #     -readability-function-cognitive-complexity
 # ------------------------------------------------------------------------------
 #
-# Why the modernize exclusions above are off:
+# Why the modernize exclusions are off:
 #
 #   concat-nested-namespaces  every file uses `namespace workoutlog { ... }` or
 #                             `namespace workoutlog::json { ... }` already, but
 #                             a handful of nested forms remain -- style-only churn.
+#   avoid-c-arrays            same intent as cppcoreguidelines-avoid-c-arrays
+#                             below, kept for when this group is fully onboarded.
 #   avoid-bind                std::bind isn't used in this codebase; excluded
 #                             defensively in case that changes.
 #   use-auto                  style churn, no safety argument.
 #   return-braced-init-list   same.
+#
+# Why the cppcoreguidelines exclusions are off (verified against this
+# codebase's actual `tidy` output when the group was onboarded, not guessed --
+# every other cppcoreguidelines-* finding from that run was fixed instead, see
+# git log for core/src/calendar.cpp, core/src/muscle_map_svg.cpp,
+# core/src/cycle.cpp):
+#
+#   avoid-magic-numbers   149 of ~180 total findings, nearly all inside
+#                         tools/wl_verify/main.cpp's test assertions (e.g.
+#                         `weight_kg == 70`). Literal expected values are the
+#                         correct idiom for a test harness; naming every one
+#                         would hurt readability, not help it.
+#   pro-type-vararg       1 hit: std::snprintf in muscle_map_svg.cpp's hex
+#                         colour formatting. No replacement is available --
+#                         std::format is excluded project-wide because Apple
+#                         libc++ (needed for the macOS core build) shipped it
+#                         late (see core/CMakeLists.txt).
+#   pro-bounds-pointer-arithmetic  8 hits, all either `argv[i]` in the CLI
+#                         tools' arg parsing (bounds-checked by the surrounding
+#                         argc comparison) or `s.data() + s.size()` in
+#                         notation.cpp's std::from_chars calls -- the standard,
+#                         correct way to form an end-iterator for that API. No
+#                         real bug in any of the 8; the check is too strict for
+#                         these idioms.
+#
+# bugprone-easily-swappable-parameters (3 hits: calendar::month_cells's
+# year/month, muscle_map_svg::color's low/high/zero, notation's contains_any)
+# were left as reported findings rather than excluded or restructured -- each
+# is a small, tested, internal function where a swap would be caught
+# immediately by wl_verify, and restructuring the signatures (or the whole
+# check) for that residual risk isn't worth the churn.
 
 WarningsAsErrors: ''
+
+CheckOptions:
+  # catch (...) blocks in this codebase are sometimes intentionally empty (the
+  # warn-never-block philosophy in docs/05-architecture.md, ADR-006 -- a parse
+  # failure is recorded elsewhere, not re-thrown or logged here). Recognise the
+  # word already used in those comments instead of disabling bugprone-empty-catch
+  # outright.
+  - key: bugprone-empty-catch.IgnoreCatchWithKeywords
+    value: '@TODO;@FIXME;Intentionally'
 
 # Only diagnose first-party headers. Anchored to the project's own top-level
 # source dirs so system headers, fetched-dependency headers (build*/_deps/...)

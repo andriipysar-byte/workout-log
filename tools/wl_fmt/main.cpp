@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         if (arg == "--check")
             check_only = true;
         else
-            paths.push_back(arg);
+            paths.emplace_back(std::move(arg));
     }
     if (paths.empty()) {
         std::cerr << "usage: wl_fmt [--check] <path.json...>\n";

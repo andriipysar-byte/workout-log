@@ -33,9 +33,9 @@ std::string color(double score, const std::string& low, const std::string& high,
     auto [r1, g1, b1] = rgb(low);
     auto [r2, g2, b2] = rgb(high);
     int r = lerp(r1, r2, t), g = lerp(g1, g2, t), b = lerp(b1, b2, t);
-    char buf[8];
-    std::snprintf(buf, sizeof(buf), "#%02x%02x%02x", r, g, b);
-    return std::string(buf);
+    std::array<char, 8> buf{};
+    std::snprintf(buf.data(), buf.size(), "#%02x%02x%02x", r, g, b);
+    return std::string(buf.data());
 }
 
 // The Swift original spliced insertions in reverse over an NSMutableString so earlier
