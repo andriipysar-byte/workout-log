@@ -24,7 +24,7 @@ final class RoundTripTests: XCTestCase {
 
     func testAllSessionFilesDecode() throws {
         let files = try sessionFiles()
-        XCTAssertGreaterThanOrEqual(files.count, 10, "expected the 2 logged + 8 stub sessions")
+        XCTAssertGreaterThanOrEqual(files.count, 9, "expected the 1 logged session + 8 stub sessions")
         for f in files {
             let data = try Data(contentsOf: f)
             XCTAssertNoThrow(try SessionCoding.decode(data), "decode \(f.lastPathComponent)")

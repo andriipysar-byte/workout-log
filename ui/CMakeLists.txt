@@ -9,5 +9,6 @@ add_executable(wl_ui
     calendar_view.cpp
     cycle_view.cpp
     session_editor.cpp
+    root_view.cpp
 )
 target_link_libraries(wl_ui PRIVATE workoutlog imgui lunasvg::lunasvg wl_warnings)
