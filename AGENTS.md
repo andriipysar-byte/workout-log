@@ -440,7 +440,9 @@ numbers are for source, section names are for documents.
 
 5.3. **Don't invent ids.** Reference only ADRs that exist in `docs/05-architecture.md` and phases
 that exist in `docs/06-roadmap.md`. If a decision isn't recorded anywhere, state the constraint in
-plain terms instead of citing something a reader can't resolve. This already went wrong once:
-`core/include/workoutlog/json.hpp`, `tools/wl_fmt/main.cpp` and `tools/wl_verify/main.cpp` all cite
-an **ADR-007** that `docs/05-architecture.md` does not contain (it ends at ADR-006) — either write
-that ADR or drop the citation, and don't add another like it.
+plain terms instead of citing something a reader can't resolve. This already went wrong twice:
+`core/include/workoutlog/json.hpp` and `tools/wl_fmt/main.cpp` cited an **ADR-007** before
+`docs/05-architecture.md` contained one (it's since been written, documenting canonical JSON
+formatting); `tools/wl_verify/main.cpp` cited the same id for an unrelated claim (being the
+acceptance gate) and had the citation dropped instead, since ADR-007 never backed it. Don't add
+another citation like either of those.

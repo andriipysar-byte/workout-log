@@ -97,3 +97,17 @@ The paper and CSV logs drifted across years (4-day → 8-day → 12-day cycles,
 changing columns, changing notation). The importer targets *several* historical
 shapes and reports what it cannot parse instead of guessing. Unparseable entries
 are surfaced for manual review, never silently dropped.
+
+---
+
+## ADR-007 — Canonical JSON formatting
+
+**Decision.** All JSON files must be formatted canonically: sorted keys, 2-space
+indent, integer-valued doubles rendered as ints, raw UTF-8 (never `\uXXXX`),
+unescaped slashes, absent optionals omitted (never written as `null`), a
+trailing newline, and untyped preservation of unmodeled fields via
+`canonicalize`.
+
+**Why.** ADR-001 means these files are diffed and read by humans. Format churn
+from different writers destroys git history. Preserving unmodeled fields
+ensures a typed reader doesn't destroy data it doesn't understand.
