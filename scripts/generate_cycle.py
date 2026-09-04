@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 from datetime import date, timedelta
 from pathlib import Path
@@ -27,10 +28,28 @@ def canonicalize(paths: list[Path]) -> None:
     """Best-effort pass through wl_fmt (core/src/json.cpp's writer) so freshly
     generated stubs already match the on-disk key order and don't need a separate
     reformat pass later. No-op if the C++ tools haven't been built yet."""
-    wl_fmt = REPO / "build" / "bin" / "wl_fmt"
-    if not paths or not wl_fmt.exists():
+    if not paths:
         return
-    subprocess.run([str(wl_fmt), *(str(p) for p in paths)], check=True)
+
+    candidates = [
+        REPO / "builds" / "gcc" / "bin" / "wl_fmt",
+        REPO / "build" / "bin" / "wl_fmt",
+        REPO / "builds" / "clang" / "bin" / "wl_fmt",
+    ]
+
+    wl_fmt = None
+    for cand in candidates:
+        if cand.exists():
+            wl_fmt = str(cand)
+            break
+
+    if not wl_fmt:
+        wl_fmt = shutil.which("wl_fmt")
+
+    if not wl_fmt:
+        return
+
+    subprocess.run([wl_fmt, *(str(p) for p in paths)], check=True)
 
 
 def training_dates(start: date, training_days: list[str], count: int) -> list[date]:
