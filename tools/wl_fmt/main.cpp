@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "workoutlog/json.hpp"
+#include "workoutlog/store.hpp"
 
 namespace {
 
@@ -21,12 +22,6 @@ std::string read_file(const std::filesystem::path& path) {
     std::ostringstream ss;
     ss << in.rdbuf();
     return ss.str();
-}
-
-void write_file(const std::filesystem::path& path, const std::string& contents) {
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) throw std::runtime_error("cannot open " + path.string() + " for writing");
-    out << contents;
 }
 
 } // namespace
@@ -57,7 +52,7 @@ int main(int argc, char** argv) {
                 if (check_only) {
                     std::cout << "would reformat: " << path.string() << "\n";
                 } else {
-                    write_file(path, canonical);
+                    workoutlog::write_file_atomic(path, canonical);
                     std::cout << "reformatted: " << path.string() << "\n";
                 }
             }

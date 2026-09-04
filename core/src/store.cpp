@@ -19,6 +19,8 @@ std::string read_file(const std::filesystem::path& path) {
     return ss.str();
 }
 
+} // namespace
+
 void write_file_atomic(const std::filesystem::path& path, const std::string& contents) {
     auto tmp = path;
     tmp += ".tmp";
@@ -37,8 +39,6 @@ void write_file_atomic(const std::filesystem::path& path, const std::string& con
         if (ec) throw std::runtime_error("cannot rename " + tmp.string() + " to " + path.string());
     }
 }
-
-} // namespace
 
 std::vector<std::filesystem::path> SessionStore::list_urls() const {
     std::vector<std::filesystem::path> out;

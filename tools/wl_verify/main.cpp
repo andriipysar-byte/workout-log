@@ -1,6 +1,6 @@
 // Port of app/Sources/wl-verify/main.swift. Lightweight, no-test-framework verifier,
 // runnable on a machine with no Swift toolchain -- this is the acceptance gate for the
-// whole C++ core (see docs/05-architecture.md, ADR-007).
+// whole C++ core.
 
 #include <algorithm>
 #include <cmath>

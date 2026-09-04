@@ -47,7 +47,6 @@ void draw_cycle_grid(AppModel& model) {
 
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-    // Header row.
     {
         const ImVec2 p0 = ImGui::GetCursorScreenPos();
         draw_list->AddRectFilled(p0, ImVec2(p0.x + total_w, p0.y + row_h), header_bg);

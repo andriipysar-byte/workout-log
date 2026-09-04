@@ -8,6 +8,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <string_view>
 #include <vector>
 
 #include "workoutlog/catalogue.hpp"
@@ -15,6 +16,7 @@
 #include "workoutlog/muscle_activation.hpp"
 #include "workoutlog/muscle_map_svg.hpp"
 #include "workoutlog/paths.hpp"
+#include "workoutlog/store.hpp"
 
 namespace {
 
@@ -26,13 +28,7 @@ std::string read_file(const std::filesystem::path& path) {
     return ss.str();
 }
 
-void write_file(const std::filesystem::path& path, const std::string& contents) {
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) throw std::runtime_error("cannot open " + path.string() + " for writing");
-    out << contents;
-}
-
-std::optional<workoutlog::WeightingMode> mode_from_string(const std::string& s) {
+std::optional<workoutlog::WeightingMode> mode_from_string(std::string_view s) {
     if (s == "set_count") return workoutlog::WeightingMode::set_count;
     if (s == "rep_volume") return workoutlog::WeightingMode::rep_volume;
     if (s == "tonnage") return workoutlog::WeightingMode::tonnage;
@@ -47,11 +43,19 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    std::filesystem::path session_path = argv[1];
-    workoutlog::WeightingMode mode = argc >= 3 ? mode_from_string(argv[2]).value_or(workoutlog::WeightingMode::set_count) : workoutlog::WeightingMode::set_count;
-
+    std::filesystem::path session_path;
+    workoutlog::WeightingMode mode = workoutlog::WeightingMode::set_count;
     std::filesystem::path repo_root;
     try {
+        session_path = argv[1];
+        if (argc >= 3) {
+            auto opt_mode = mode_from_string(argv[2]);
+            if (!opt_mode.has_value()) {
+                std::cerr << "error: unrecognised mode '" << argv[2] << "'. available modes: set_count, rep_volume, tonnage\n";
+                return 2;
+            }
+            mode = opt_mode.value();
+        }
         repo_root = workoutlog::paths::resolve_repo_root();
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
@@ -76,7 +80,7 @@ int main(int argc, char** argv) {
 
         auto scores = workoutlog::MuscleActivation().for_session(session, catalogue, mode);
         auto svg = workoutlog::muscle_map_svg::colorize(tmpl, scores);
-        write_file(out_path, svg);
+        workoutlog::write_file_atomic(out_path, svg);
 
         std::vector<std::pair<std::string, double>> ranked(scores.begin(), scores.end());
         std::stable_sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) { return a.second > b.second; });

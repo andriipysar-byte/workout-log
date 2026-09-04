@@ -73,7 +73,7 @@ ImU32 rgba(std::string_view hex, float alpha) {
         ok = hi >= 0 && lo >= 0;
         if (ok) channel.at(i) = hi * 16 + lo;
     }
-    if (!ok) return ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.0f, 1.0f, alpha)); // malformed hex: loud magenta
+    if (!ok) return ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.0f, 1.0f, alpha));
 
     return ImGui::ColorConvertFloat4ToU32(ImVec4(static_cast<float>(channel.at(0)) / 255.0f,
                                                   static_cast<float>(channel.at(1)) / 255.0f,

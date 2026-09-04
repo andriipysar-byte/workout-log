@@ -41,7 +41,7 @@ public:
     // True at most once per occurrence: SDL_EVENT_RENDER_DEVICE_RESET or
     // _TARGETS_RESET happened since the last call, which invalidates every
     // SDL_Texture the app holds (real on the D3D11 backend on Windows). Callers
-    // that cache textures (ui::SvgTexture's MapCache) must check this every frame.
+    // that cache textures (ui::SvgTexture) must check this every frame.
     bool consume_render_device_reset();
 
     // Shows the native folder picker (SDL_ShowOpenFolderDialog). Asynchronous and
