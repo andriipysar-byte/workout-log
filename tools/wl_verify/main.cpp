@@ -24,6 +24,8 @@
 #include "workoutlog/paths.hpp"
 #include "workoutlog/store.hpp"
 
+namespace wl = workoutlog;
+
 namespace {
 
 int g_failures = 0;
@@ -86,7 +88,7 @@ std::string join_sorted(const std::set<std::string>& s) {
 int main() {
     std::filesystem::path repo_root;
     try {
-        repo_root = workoutlog::paths::resolve_repo_root();
+        repo_root = wl::paths::resolve_repo_root();
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;
@@ -95,7 +97,7 @@ int main() {
 
     // ---- 1. Round-trip over data/*.json --------------------------------------
     {
-        workoutlog::SessionStore store(data_dir);
+        wl::SessionStore store(data_dir);
         auto files = store.list_urls();
         std::cout << "Round-trip over " << files.size() << " session file(s) in " << data_dir.string() << ":\n";
 
@@ -113,10 +115,10 @@ int main() {
         for (const auto& f : files) {
             try {
                 auto original = read_file(f);
-                auto s1 = workoutlog::json::decode_session(original);
-                auto enc1 = workoutlog::json::encode_session(s1);
-                auto s2 = workoutlog::json::decode_session(enc1);
-                auto enc2 = workoutlog::json::encode_session(s2);
+                auto s1 = wl::json::decode_session(original);
+                auto enc1 = wl::json::encode_session(s1);
+                auto s2 = wl::json::decode_session(enc1);
+                auto enc2 = wl::json::encode_session(s2);
                 check(s1 == s2 && enc1 == enc2, "round-trip " + f.filename().string());
                 // Strictly stronger than the idempotence check above: after the
                 // wl_fmt reformat commit, every file on disk IS the canonical writer's
@@ -129,28 +131,28 @@ int main() {
         }
     }
 
-    // ---- 2. workoutlog::Catalogue (exercises.json) ----------------------------------------
-    std::optional<workoutlog::Catalogue> catalogue;
-    std::cout << "workoutlog::Catalogue (exercises.json):\n";
+    // ---- 2. Catalogue (exercises.json) ----------------------------------------
+    std::optional<wl::Catalogue> catalogue;
+    std::cout << "Catalogue (exercises.json):\n";
     try {
-        auto cat = workoutlog::json::decode_catalogue(read_file(workoutlog::paths::catalogue_path(repo_root)));
+        auto cat = wl::json::decode_catalogue(read_file(wl::paths::catalogue_path(repo_root)));
         catalogue = cat;
 
         check(!cat.exercises.empty(), "catalogue non-empty (" + std::to_string(cat.exercises.size()) + " exercises)");
 
-        auto front_squat = workoutlog::catalogue::resolve(cat, "присід фронтальний");
-        check(front_squat && front_squat->pattern == workoutlog::Pattern::squat, "canonical name resolves");
+        auto front_squat = wl::catalogue::resolve(cat, "присід фронтальний");
+        check(front_squat && front_squat->pattern == wl::Pattern::squat, "canonical name resolves");
 
-        auto alias = workoutlog::catalogue::resolve(cat, "фр. присід");
+        auto alias = wl::catalogue::resolve(cat, "фр. присід");
         check(alias && alias->name == "присід фронтальний", "alias resolves to canonical");
 
-        check(workoutlog::catalogue::resolve(cat, "невідома вправа") == nullptr, "unknown name returns nil (warn-not-block)");
+        check(wl::catalogue::resolve(cat, "невідома вправа") == nullptr, "unknown name returns nil (warn-not-block)");
 
-        auto bench = workoutlog::catalogue::resolve(cat, "жим лежачи");
+        auto bench = wl::catalogue::resolve(cat, "жим лежачи");
         check(bench && bench->primary_muscles == std::vector<std::string>{"chest", "triceps"},
               "жим лежачи resolves with primary muscles");
 
-        auto kb = workoutlog::catalogue::resolve(cat, "гирі");
+        auto kb = wl::catalogue::resolve(cat, "гирі");
         check(kb && kb->name == "махи гирею", "metcon alias 'гирі' resolves to махи гирею");
 
         bool all_have_primary = true;
@@ -161,25 +163,25 @@ int main() {
         std::set<std::string> ungrouped;
         for (const auto& ex : cat.exercises) {
             for (const auto& m : ex.primary_muscles)
-                if (!workoutlog::muscle_group_of(m)) ungrouped.insert(m);
+                if (!wl::muscle_group_of(m)) ungrouped.insert(m);
             for (const auto& m : ex.secondary_muscles)
-                if (!workoutlog::muscle_group_of(m)) ungrouped.insert(m);
+                if (!wl::muscle_group_of(m)) ungrouped.insert(m);
         }
         check(ungrouped.empty(), "every catalogue muscle maps to a group (ungrouped: " + join_sorted(ungrouped) + ")");
 
-        check(workoutlog::dominant({{"chest", 3.0}, {"biceps", 1.0}}) == workoutlog::MuscleGroup::chest,
+        check(wl::dominant({{"chest", 3.0}, {"biceps", 1.0}}) == wl::MuscleGroup::chest,
               "dominant group is the highest-scoring region");
 
-        auto ryvok = workoutlog::catalogue::resolve(cat, "ривок");
-        check(ryvok && ryvok->category == workoutlog::ExerciseCategory::power && ryvok->is_explosive(),
+        auto ryvok = wl::catalogue::resolve(cat, "ривок");
+        check(ryvok && ryvok->category == wl::ExerciseCategory::power && ryvok->is_explosive(),
               "category enum decodes (ривок = power)");
 
-        std::map<workoutlog::ExerciseCategory, int> by_category;
+        std::map<wl::ExerciseCategory, int> by_category;
         for (const auto& ex : cat.exercises) by_category[ex.category]++;
-        check(by_category[workoutlog::ExerciseCategory::power] == 6 && by_category[workoutlog::ExerciseCategory::speed] == 3,
+        check(by_category[wl::ExerciseCategory::power] == 6 && by_category[wl::ExerciseCategory::speed] == 3,
               "6 power + 3 speed = former explosive set (power:" +
-                  std::to_string(by_category[workoutlog::ExerciseCategory::power]) +
-                  " speed:" + std::to_string(by_category[workoutlog::ExerciseCategory::speed]) + ")");
+                  std::to_string(by_category[wl::ExerciseCategory::power]) +
+                  " speed:" + std::to_string(by_category[wl::ExerciseCategory::speed]) + ")");
 
         int explosive_count = 0;
         for (const auto& ex : cat.exercises)
@@ -189,13 +191,13 @@ int main() {
         check(false, std::string("catalogue load: ") + e.what());
     }
 
-    // ---- 3. workoutlog::MuscleActivation ---------------------------------------------------
-    std::cout << "workoutlog::MuscleActivation:\n";
+    // ---- 3. MuscleActivation ---------------------------------------------------
+    std::cout << "MuscleActivation:\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        workoutlog::MuscleActivation activation;
+        wl::MuscleActivation activation;
 
-        if (auto* fs = workoutlog::catalogue::resolve(*catalogue, "присід фронтальний")) {
+        if (auto* fs = wl::catalogue::resolve(*catalogue, "присід фронтальний")) {
             auto m = activation.for_exercise(*fs);
             check(m.count("quads") && m.count("glutes") && m.count("spinal_erectors") && m["quads"] == 1.0 &&
                       m["glutes"] == 1.0 && m["spinal_erectors"] == 0.5,
@@ -204,34 +206,34 @@ int main() {
             check(false, "front squat missing from catalogue");
         }
 
-        workoutlog::SessionStore store(data_dir);
+        wl::SessionStore store(data_dir);
         auto c2 = store.load(data_dir / "2026-06-23_C2.json");
 
-        std::map<workoutlog::WeightingMode, std::string> peaks;
-        for (auto mode : {workoutlog::WeightingMode::set_count, workoutlog::WeightingMode::rep_volume, workoutlog::WeightingMode::tonnage}) {
+        std::map<wl::WeightingMode, std::string> peaks;
+        for (auto mode : {wl::WeightingMode::set_count, wl::WeightingMode::rep_volume, wl::WeightingMode::tonnage}) {
             auto map = activation.for_session(c2, *catalogue, mode);
             double peak = 0;
             for (const auto& [k, v] : map) peak = std::max(peak, v);
-            check(std::fabs(peak - 1.0) < 1e-9, workoutlog::to_string(mode) + ": normalized peak = 1.0");
+            check(std::fabs(peak - 1.0) < 1e-9, wl::to_string(mode) + ": normalized peak = 1.0");
             peaks[mode] = max_key(map);
         }
-        check(peaks[workoutlog::WeightingMode::set_count] == "forearms",
-              "set_count peak = forearms (grip-set heavy): " + peaks[workoutlog::WeightingMode::set_count]);
-        check(peaks[workoutlog::WeightingMode::rep_volume] == "quads" || peaks[workoutlog::WeightingMode::rep_volume] == "glutes",
-              "rep_volume peak is squat pattern: " + peaks[workoutlog::WeightingMode::rep_volume]);
-        check(peaks[workoutlog::WeightingMode::tonnage] == "quads" || peaks[workoutlog::WeightingMode::tonnage] == "glutes",
-              "tonnage peak is squat pattern: " + peaks[workoutlog::WeightingMode::tonnage]);
-        check(peaks[workoutlog::WeightingMode::set_count] != peaks[workoutlog::WeightingMode::tonnage],
+        check(peaks[wl::WeightingMode::set_count] == "forearms",
+              "set_count peak = forearms (grip-set heavy): " + peaks[wl::WeightingMode::set_count]);
+        check(peaks[wl::WeightingMode::rep_volume] == "quads" || peaks[wl::WeightingMode::rep_volume] == "glutes",
+              "rep_volume peak is squat pattern: " + peaks[wl::WeightingMode::rep_volume]);
+        check(peaks[wl::WeightingMode::tonnage] == "quads" || peaks[wl::WeightingMode::tonnage] == "glutes",
+              "tonnage peak is squat pattern: " + peaks[wl::WeightingMode::tonnage]);
+        check(peaks[wl::WeightingMode::set_count] != peaks[wl::WeightingMode::tonnage],
               "weighting modes differ (set_count != tonnage)");
     } catch (const std::exception& e) {
-        check(false, std::string("workoutlog::MuscleActivation: ") + e.what());
+        check(false, std::string("MuscleActivation: ") + e.what());
     }
 
     // ---- 4. MuscleMapSVG colorizer ---------------------------------------------
     std::cout << "MuscleMapSVG colorizer:\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        auto tmpl = read_file(workoutlog::paths::muscle_map_template_path(repo_root));
+        auto tmpl = read_file(wl::paths::muscle_map_template_path(repo_root));
 
         std::set<std::string> used_muscles;
         for (const auto& ex : catalogue->exercises) {
@@ -244,28 +246,28 @@ int main() {
             if (!template_muscles.count(m)) missing.insert(m);
         check(missing.empty(), "SVG template covers every catalogue muscle (missing: " + join_sorted(missing) + ")");
 
-        auto svg = workoutlog::muscle_map_svg::colorize(tmpl, {{"quads", 1.0}, {"chest", 0.4}});
+        auto svg = wl::muscle_map_svg::colorize(tmpl, {{"quads", 1.0}, {"chest", 0.4}});
         check(svg.find(R"(data-muscle="quads" style="fill:#0d366b")") != std::string::npos,
               "peak muscle (quads=1.0) filled with high colour");
         check(svg.find(R"(data-muscle="forearms" style="fill:#e8e8e3")") != std::string::npos,
               "unworked muscle filled with zero colour");
-        check(workoutlog::muscle_map_svg::color(0, "#86b6ef", "#0d366b", "#e8e8e3") == "#e8e8e3", "score 0 -> zero colour");
-        check(workoutlog::muscle_map_svg::color(0.5, "#86b6ef", "#0d366b", "#e8e8e3") == "#4a76ad",
+        check(wl::muscle_map_svg::color(0, "#86b6ef", "#0d366b", "#e8e8e3") == "#e8e8e3", "score 0 -> zero colour");
+        check(wl::muscle_map_svg::color(0.5, "#86b6ef", "#0d366b", "#e8e8e3") == "#4a76ad",
               "score 0.5 -> midpoint colour (round-half-away-from-zero)");
-        check(workoutlog::muscle_map_svg::color(1, "#86b6ef", "#0d366b", "#e8e8e3") == "#0d366b", "score 1 -> high colour");
+        check(wl::muscle_map_svg::color(1, "#86b6ef", "#0d366b", "#e8e8e3") == "#0d366b", "score 1 -> high colour");
     } catch (const std::exception& e) {
         check(false, std::string("MuscleMapSVG: ") + e.what());
     }
 
-    // ---- 5. workoutlog::SessionStore (save -> reload) ---------------------------------------
-    std::cout << "workoutlog::SessionStore (save -> reload):\n";
+    // ---- 5. SessionStore (save -> reload) ---------------------------------------
+    std::cout << "SessionStore (save -> reload):\n";
     try {
-        workoutlog::SessionStore store(data_dir);
+        wl::SessionStore store(data_dir);
         auto urls = store.list_urls();
         if (!urls.empty()) {
             auto loaded = store.load(urls.front());
             auto tmp_dir = std::filesystem::temp_directory_path() / ("wl-verify-" + loaded.cycle_day);
-            workoutlog::SessionStore tmp_store(tmp_dir);
+            wl::SessionStore tmp_store(tmp_dir);
             auto written = tmp_store.save(loaded);
             auto reloaded = tmp_store.load(written);
             check(reloaded == loaded, "save then reload is identical (" + written.filename().string() + ")");
@@ -274,16 +276,16 @@ int main() {
             std::error_code ec;
             std::filesystem::remove_all(tmp_dir, ec);
         } else {
-            check(false, "no session files to exercise workoutlog::SessionStore");
+            check(false, "no session files to exercise SessionStore");
         }
     } catch (const std::exception& e) {
-        check(false, std::string("workoutlog::SessionStore: ") + e.what());
+        check(false, std::string("SessionStore: ") + e.what());
     }
 
     // ---- 6. Notation parser (docs/03-log-notation.md examples) -----------------
     std::cout << "Notation parser (docs/03-log-notation.md examples):\n";
     {
-        auto ramp = workoutlog::notation::parse_strength_sets("6 × [70, 80, 90, 100, 110]");
+        auto ramp = wl::notation::parse_strength_sets("6 × [70, 80, 90, 100, 110]");
         bool ramp_ok = ramp.sets.size() == 5;
         for (const auto& s : ramp.sets) ramp_ok = ramp_ok && s.reps == 6;
         std::vector<std::optional<double>> weights;
@@ -291,26 +293,26 @@ int main() {
         ramp_ok = ramp_ok && weights == std::vector<std::optional<double>>{70, 80, 90, 100, 110};
         check(ramp_ok, "ramp expands to 5 sets at reps 6");
 
-        auto backoff = workoutlog::notation::parse_strength_sets("6 × [70, 80, 90, 100, 110] + 6 × [30]");
+        auto backoff = wl::notation::parse_strength_sets("6 × [70, 80, 90, 100, 110] + 6 × [30]");
         bool backoff_ok = backoff.sets.size() == 6 && backoff.sets.back().weight_kg == 30 &&
                            backoff.sets.back().is_backoff == true;
         for (size_t i = 0; i < 5 && backoff_ok; i++) backoff_ok = backoff_ok && !backoff.sets[i].is_backoff;
         check(backoff_ok, "trailing group is a back-off set");
 
-        auto override_sets = workoutlog::notation::parse_strength_sets("6 × [30, 60, 80(4), 86(2), 90(1)]");
+        auto override_sets = wl::notation::parse_strength_sets("6 × [30, 60, 80(4), 86(2), 90(1)]");
         std::vector<std::optional<int>> reps;
         for (const auto& s : override_sets.sets) reps.push_back(s.reps);
         check(reps == std::vector<std::optional<int>>{6, 6, 4, 2, 1}, "per-set rep overrides applied");
 
-        auto cluster = workoutlog::notation::parse_strength_sets("5+5+4+3+3 (20)");
+        auto cluster = wl::notation::parse_strength_sets("5+5+4+3+3 (20)");
         check(cluster.sets.size() == 1 && cluster.sets[0].cluster == std::vector<int>{5, 5, 4, 3, 3} &&
                   cluster.sets[0].total_reps == 20,
               "cluster with explicit total");
 
-        auto cluster2 = workoutlog::notation::parse_strength_sets("4+4+3+2+2+2+2+1");
+        auto cluster2 = wl::notation::parse_strength_sets("4+4+3+2+2+2+2+1");
         check(!cluster2.sets.empty() && cluster2.sets[0].total_reps == 20, "cluster total derived from sum");
 
-        auto holds = workoutlog::notation::parse_strength_sets("4 × [54c, 40c, 36c, 42c]");
+        auto holds = wl::notation::parse_strength_sets("4 × [54c, 40c, 36c, 42c]");
         bool holds_ok = holds.sets.size() == 4;
         std::vector<std::optional<double>> durations;
         for (const auto& s : holds.sets) durations.push_back(s.duration_sec);
@@ -318,7 +320,7 @@ int main() {
         for (const auto& s : holds.sets) holds_ok = holds_ok && !s.reps;
         check(holds_ok, "timed holds -> duration sets, no reps");
 
-        auto braces = workoutlog::notation::parse_strength_sets("{60с, 70с, 30с, 35с}");
+        auto braces = wl::notation::parse_strength_sets("{60с, 70с, 30с, 35с}");
         std::vector<std::optional<double>> brace_durations;
         for (const auto& s : braces.sets) brace_durations.push_back(s.duration_sec);
         check(braces.sets.size() == 4 && brace_durations == std::vector<std::optional<double>>{60, 70, 30, 35},
@@ -327,17 +329,17 @@ int main() {
         // Adversarial cases beyond the original Swift suite -- ported here because
         // they're what the UTF-8 rework (landmine #2) and strict number parsing are
         // actually for.
-        check(workoutlog::notation::parse_strength_sets("6 × []").sets.empty(), "empty bracket list yields no sets");
+        check(wl::notation::parse_strength_sets("6 × []").sets.empty(), "empty bracket list yields no sets");
 
-        auto cyr_x = workoutlog::notation::parse_strength_sets("6 х [70]");
+        auto cyr_x = wl::notation::parse_strength_sets("6 х [70]");
         check(cyr_x.sets.size() == 1 && cyr_x.sets[0].weight_kg == 70 && cyr_x.sets[0].reps == 6,
               "Cyrillic multiplier 'х' recognised");
 
-        auto star = workoutlog::notation::parse_strength_sets("6 * [70]");
+        auto star = wl::notation::parse_strength_sets("6 * [70]");
         check(star.sets.size() == 1 && star.sets[0].weight_kg == 70 && star.sets[0].reps == 6,
               "'*' multiplier recognised");
 
-        auto backoff_no_count = workoutlog::notation::parse_strength_sets("6 X [70,80] + [30]");
+        auto backoff_no_count = wl::notation::parse_strength_sets("6 X [70,80] + [30]");
         check(backoff_no_count.sets.size() == 3 && backoff_no_count.sets.back().weight_kg == 30 &&
                   backoff_no_count.sets.back().is_backoff == true && !backoff_no_count.sets.back().reps,
               "back-off group with no count prefix has no reps");
@@ -346,84 +348,84 @@ int main() {
         // `.split(separator: ",")` on the list), never a decimal point -- so "47,5"
         // here is two values, not one. The comma-to-period swap in parse_weight only
         // ever sees a token after that split has already happened.
-        auto comma_in_list = workoutlog::notation::parse_strength_sets("1 × [47,5]");
+        auto comma_in_list = wl::notation::parse_strength_sets("1 × [47,5]");
         check(comma_in_list.sets.size() == 2 && comma_in_list.sets[0].weight_kg == 47 &&
                   comma_in_list.sets[1].weight_kg == 5,
               "comma inside a bracket list is an item separator, not a decimal point");
 
-        auto standalone_paren = workoutlog::notation::parse_strength_sets("1 × [90(4)]");
+        auto standalone_paren = wl::notation::parse_strength_sets("1 × [90(4)]");
         check(standalone_paren.sets.size() == 1 && standalone_paren.sets[0].weight_kg == 90 &&
                   standalone_paren.sets[0].reps == 4,
               "standalone rep override parses");
 
-        check(workoutlog::notation::parse_strength_sets("   ").sets.empty(), "whitespace-only input yields no sets");
+        check(wl::notation::parse_strength_sets("   ").sets.empty(), "whitespace-only input yields no sets");
 
-        auto mixed_seconds = workoutlog::notation::parse_strength_sets("4 × [54c, 40с]");
+        auto mixed_seconds = wl::notation::parse_strength_sets("4 × [54c, 40с]");
         std::vector<std::optional<double>> mixed_durations;
         for (const auto& s : mixed_seconds.sets) mixed_durations.push_back(s.duration_sec);
         check(mixed_seconds.sets.size() == 2 && mixed_durations == std::vector<std::optional<double>>{54, 40},
               "Latin 'c' and Cyrillic 'с' seconds suffix in one list");
 
-        auto compose = workoutlog::notation::parse_strength_sets("6 × [70, 80]");
-        workoutlog::StrengthBlock block;
+        auto compose = wl::notation::parse_strength_sets("6 × [70, 80]");
+        wl::StrengthBlock block;
         block.exercise = "присід фронтальний";
         block.sets = compose.sets;
-        workoutlog::Session session;
+        wl::Session session;
         session.date = "2026-07-21";
         session.cycle_day = "A1";
         session.blocks.emplace_back(std::move(block));
         bool round_ok = false;
         try {
-            auto data = workoutlog::json::encode_session(session);
-            auto round = workoutlog::json::decode_session(data);
-            if (auto* sb = std::get_if<workoutlog::StrengthBlock>(&round.blocks.front()))
+            auto data = wl::json::encode_session(session);
+            auto round = wl::json::decode_session(data);
+            if (auto* sb = std::get_if<wl::StrengthBlock>(&round.blocks.front()))
                 round_ok = sb->sets.size() == 2 && sb->sets[0].weight_kg == 70;
         } catch (...) {
             round_ok = false;
         }
         check(round_ok, "parsed sets survive a JSON round-trip in a session");
 
-        // format_set is workoutlog::notation::parse_strength_sets's inverse (core/src/notation.cpp);
+        // format_set is notation::parse_strength_sets's inverse (core/src/notation.cpp);
         // these are the same shapes the parser test above exercises, checked both ways.
-        check(workoutlog::notation::format_set(ramp.sets[0]) == "6×70", "format_set: reps x weight");
-        check(workoutlog::notation::format_set(backoff.sets.back()) == "6×30*", "format_set: back-off set gets a trailing '*'");
-        check(workoutlog::notation::format_set(cluster.sets[0]) == "5+5+4+3+3 (20)", "format_set: cluster round-trips with its total");
-        check(workoutlog::notation::format_set(cluster2.sets[0]) == "4+4+3+2+2+2+2+1 (20)",
+        check(wl::notation::format_set(ramp.sets[0]) == "6×70", "format_set: reps x weight");
+        check(wl::notation::format_set(backoff.sets.back()) == "6×30*", "format_set: back-off set gets a trailing '*'");
+        check(wl::notation::format_set(cluster.sets[0]) == "5+5+4+3+3 (20)", "format_set: cluster round-trips with its total");
+        check(wl::notation::format_set(cluster2.sets[0]) == "4+4+3+2+2+2+2+1 (20)",
               "format_set: cluster round-trips with a sum-derived total");
-        check(workoutlog::notation::format_set(holds.sets[0]) == "54c", "format_set: timed hold");
+        check(wl::notation::format_set(holds.sets[0]) == "54c", "format_set: timed hold");
 
-        workoutlog::WorkSet bodyweight{};
+        wl::WorkSet bodyweight{};
         bodyweight.reps = 8;
-        check(workoutlog::notation::format_set(bodyweight) == "8×bw", "format_set: no weight formats as bw");
+        check(wl::notation::format_set(bodyweight) == "8×bw", "format_set: no weight formats as bw");
 
         // Untrusted input (a hand-edited file) can carry a non-finite weight; format_set
         // must degrade to "?" rather than feed it through round_for_display's narrowing
         // cast (AGENTS.md 1.2.1/1.2.2/2.6) -- the failure path, not just the happy path.
-        workoutlog::WorkSet non_finite{};
+        wl::WorkSet non_finite{};
         non_finite.reps = 3;
         non_finite.weight_kg = std::numeric_limits<double>::quiet_NaN();
-        check(workoutlog::notation::format_set(non_finite) == "3×?", "format_set: non-finite weight degrades to '?', doesn't throw");
+        check(wl::notation::format_set(non_finite) == "3×?", "format_set: non-finite weight degrades to '?', doesn't throw");
     }
 
     // ---- 7. Ukrainian case-folding (landmine: naive +0x20 fold breaks these) ---
-    std::cout << "Ukrainian case-folding (workoutlog::Catalogue.resolve):\n";
+    std::cout << "Ukrainian case-folding (Catalogue.resolve):\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        auto upper1 = workoutlog::catalogue::resolve(*catalogue, "ПРИСІД ФРОНТАЛЬНИЙ");
+        auto upper1 = wl::catalogue::resolve(*catalogue, "ПРИСІД ФРОНТАЛЬНИЙ");
         check(upper1 && upper1->name == "присід фронтальний", "resolves ALL-CAPS with 'І' (U+0406, folds by +0x50)");
 
-        auto upper2 = workoutlog::catalogue::resolve(*catalogue, "ЖИМ ЛЕЖАЧИ");
+        auto upper2 = wl::catalogue::resolve(*catalogue, "ЖИМ ЛЕЖАЧИ");
         check(upper2 && upper2->name == "жим лежачи", "resolves ALL-CAPS 'ЖИМ ЛЕЖАЧИ'");
     } catch (const std::exception& e) {
         check(false, std::string("case-folding: ") + e.what());
     }
 
-    // ---- 8. workoutlog::cycle::build_index / primary_groups (moved out of AppModel -- ADR-004) --
-    std::cout << "workoutlog::cycle::build_index (moved out of AppModel.swift, ADR-004):\n";
+    // ---- 8. cycle::build_index / primary_groups (moved out of AppModel -- ADR-004) --
+    std::cout << "cycle::build_index (moved out of AppModel.swift, ADR-004):\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        workoutlog::SessionStore store(data_dir);
-        auto idx = workoutlog::cycle::build_index(store, catalogue);
+        wl::SessionStore store(data_dir);
+        auto idx = wl::cycle::build_index(store, catalogue);
 
         check(idx.calendar.size() == 9, "calendar has one entry per file, including duplicate cycle days (" +
                                              std::to_string(idx.calendar.size()) + ")");
@@ -444,26 +446,26 @@ int main() {
                                                "later of the two C2 files)");
         }
 
-        auto groups = workoutlog::cycle::primary_groups("присід фронтальний", catalogue);
-        check(groups.size() == 1 && groups[0] == workoutlog::MuscleGroup::legs,
+        auto groups = wl::cycle::primary_groups("присід фронтальний", catalogue);
+        check(groups.size() == 1 && groups[0] == wl::MuscleGroup::legs,
               "front squat's primary muscles (quads+glutes) collapse to one group (legs)");
     } catch (const std::exception& e) {
-        check(false, std::string("workoutlog::cycle::build_index: ") + e.what());
+        check(false, std::string("cycle::build_index: ") + e.what());
     }
 
-    // ---- 9. workoutlog::calendar::month_cells -----------------------------------------------
-    std::cout << "workoutlog::calendar::month_cells:\n";
+    // ---- 9. calendar::month_cells -----------------------------------------------
+    std::cout << "calendar::month_cells:\n";
     {
-        check(workoutlog::calendar::weekday_sun1(2026, 8, 1) == 7, "Aug 1 2026 is a Saturday (sun1=7)");
-        check(workoutlog::calendar::days_in_month(2026, 2) == 28, "Feb 2026 is not a leap year");
-        check(workoutlog::calendar::days_in_month(2024, 2) == 29, "Feb 2024 is a leap year");
+        check(wl::calendar::weekday_sun1(2026, 8, 1) == 7, "Aug 1 2026 is a Saturday (sun1=7)");
+        check(wl::calendar::days_in_month(2026, 2) == 28, "Feb 2026 is not a leap year");
+        check(wl::calendar::days_in_month(2024, 2) == 29, "Feb 2024 is a leap year");
 
-        auto cells_sun_first = workoutlog::calendar::month_cells(2026, 8, 1); // first_weekday = Sunday
+        auto cells_sun_first = wl::calendar::month_cells(2026, 8, 1); // first_weekday = Sunday
         check(cells_sun_first.size() == 37, "Aug 2026, Sunday-first: 6 leading blanks + 31 days = 37 cells");
         check(!cells_sun_first[0].has_value() && cells_sun_first[6] == 1,
               "6 leading blanks before the 1st, Sunday-first");
 
-        auto cells_mon_first = workoutlog::calendar::month_cells(2026, 8, 2); // first_weekday = Monday
+        auto cells_mon_first = wl::calendar::month_cells(2026, 8, 2); // first_weekday = Monday
         check(cells_mon_first.size() == 36, "Aug 2026, Monday-first: 5 leading blanks + 31 days = 36 cells");
         check(!cells_mon_first[0].has_value() && cells_mon_first[5] == 1,
               "5 leading blanks before the 1st, Monday-first");
