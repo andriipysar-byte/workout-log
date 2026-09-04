@@ -10,6 +10,8 @@
 // truth (ADR-001); filename is YYYY-MM-DD_<cycleDay>.json.
 namespace workoutlog {
 
+void write_file_atomic(const std::filesystem::path& path, const std::string& contents);
+
 struct LoadFailure {
     std::filesystem::path path;
     std::string error;
