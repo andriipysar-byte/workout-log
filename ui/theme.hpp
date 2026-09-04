@@ -57,8 +57,6 @@ CornerColors group_gradient(std::span<const MuscleGroup> groups, double base_opa
 // Layout constants mirrored from the SwiftUI source, read from one place instead
 // of being repeated as literals across every screen.
 namespace tokens {
-inline constexpr int window_min_width = 820;
-inline constexpr int window_min_height = 560;
 inline constexpr float sidebar_min_width = 260.0f;
 inline constexpr float card_rounding = 10.0f;
 inline constexpr float day_cell_rounding = 6.0f;
