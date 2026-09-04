@@ -1,5 +1,8 @@
 # WorkoutLog2 — agent guide
 
+C++ work in `core/`, `tools/`, `capi/` and `ui/` also follows [`AGENTS.md`](AGENTS.md) — the
+coding, safety and verification rules for the C++ tree. Read it before touching C++ code.
+
 ## Comments
 
 Write a comment ONLY when the code uses a trick or a solution that is not obvious
