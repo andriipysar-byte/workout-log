@@ -16,8 +16,6 @@
 #include "workoutlog/muscle_map_svg.hpp"
 #include "workoutlog/paths.hpp"
 
-using namespace workoutlog;
-
 namespace {
 
 std::string read_file(const std::filesystem::path& path) {
@@ -34,10 +32,10 @@ void write_file(const std::filesystem::path& path, const std::string& contents) 
     out << contents;
 }
 
-std::optional<WeightingMode> mode_from_string(const std::string& s) {
-    if (s == "set_count") return WeightingMode::set_count;
-    if (s == "rep_volume") return WeightingMode::rep_volume;
-    if (s == "tonnage") return WeightingMode::tonnage;
+std::optional<workoutlog::WeightingMode> mode_from_string(const std::string& s) {
+    if (s == "set_count") return workoutlog::WeightingMode::set_count;
+    if (s == "rep_volume") return workoutlog::WeightingMode::rep_volume;
+    if (s == "tonnage") return workoutlog::WeightingMode::tonnage;
     return std::nullopt;
 }
 
@@ -50,17 +48,17 @@ int main(int argc, char** argv) {
     }
 
     std::filesystem::path session_path = argv[1];
-    WeightingMode mode = argc >= 3 ? mode_from_string(argv[2]).value_or(WeightingMode::set_count) : WeightingMode::set_count;
+    workoutlog::WeightingMode mode = argc >= 3 ? mode_from_string(argv[2]).value_or(workoutlog::WeightingMode::set_count) : workoutlog::WeightingMode::set_count;
 
     std::filesystem::path repo_root;
     try {
-        repo_root = paths::resolve_repo_root();
+        repo_root = workoutlog::paths::resolve_repo_root();
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;
     }
-    auto template_path = paths::muscle_map_template_path(repo_root);
-    auto catalogue_path = paths::catalogue_path(repo_root);
+    auto template_path = workoutlog::paths::muscle_map_template_path(repo_root);
+    auto catalogue_path = workoutlog::paths::catalogue_path(repo_root);
 
     std::filesystem::path out_path;
     if (argc >= 4) {
@@ -68,16 +66,16 @@ int main(int argc, char** argv) {
     } else {
         out_path = session_path;
         out_path.replace_extension();
-        out_path += "." + to_string(mode) + ".svg";
+        out_path += "." + workoutlog::to_string(mode) + ".svg";
     }
 
     try {
-        auto catalogue = json::decode_catalogue(read_file(catalogue_path));
-        auto session = json::decode_session(read_file(session_path));
+        auto catalogue = workoutlog::json::decode_catalogue(read_file(catalogue_path));
+        auto session = workoutlog::json::decode_session(read_file(session_path));
         auto tmpl = read_file(template_path);
 
-        auto scores = MuscleActivation().for_session(session, catalogue, mode);
-        auto svg = muscle_map_svg::colorize(tmpl, scores);
+        auto scores = workoutlog::MuscleActivation().for_session(session, catalogue, mode);
+        auto svg = workoutlog::muscle_map_svg::colorize(tmpl, scores);
         write_file(out_path, svg);
 
         std::vector<std::pair<std::string, double>> ranked(scores.begin(), scores.end());
@@ -89,7 +87,7 @@ int main(int argc, char** argv) {
             if (i) top << ", ";
             top << ranked[i].first << " " << std::fixed << std::setprecision(2) << ranked[i].second;
         }
-        std::cout << "wrote " << out_path.filename().string() << "  [" << to_string(mode) << "]  top: " << top.str()
+        std::cout << "wrote " << out_path.filename().string() << "  [" << workoutlog::to_string(mode) << "]  top: " << top.str()
                   << "\n";
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << "\n";

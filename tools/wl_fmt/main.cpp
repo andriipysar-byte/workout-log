@@ -13,8 +13,6 @@
 
 #include "workoutlog/json.hpp"
 
-using namespace workoutlog;
-
 namespace {
 
 std::string read_file(const std::filesystem::path& path) {
@@ -53,7 +51,7 @@ int main(int argc, char** argv) {
     for (const auto& path : paths) {
         try {
             auto original = read_file(path);
-            auto canonical = json::canonicalize(original);
+            auto canonical = workoutlog::json::canonicalize(original);
             if (canonical != original) {
                 any_changed = true;
                 if (check_only) {
