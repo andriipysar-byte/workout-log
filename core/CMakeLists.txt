@@ -14,6 +14,7 @@ add_library(workoutlog STATIC
     src/store.cpp
     src/calendar.cpp
     src/cycle.cpp
+    src/cycle_plan.cpp
 )
 
 target_include_directories(workoutlog PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

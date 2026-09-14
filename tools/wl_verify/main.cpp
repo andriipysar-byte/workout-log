@@ -15,6 +15,7 @@
 #include "workoutlog/calendar.hpp"
 #include "workoutlog/catalogue.hpp"
 #include "workoutlog/cycle.hpp"
+#include "workoutlog/cycle_plan.hpp"
 #include "workoutlog/json.hpp"
 #include "workoutlog/models.hpp"
 #include "workoutlog/muscle_activation.hpp"
@@ -469,6 +470,93 @@ int main() {
         check(cells_mon_first.size() == 36, "Aug 2026, Monday-first: 5 leading blanks + 31 days = 36 cells");
         check(!cells_mon_first[0].has_value() && cells_mon_first[5] == 1,
               "5 leading blanks before the 1st, Monday-first");
+    }
+
+    // ---- 10. cycle_plan (cycles.json CRUD + atomic writer) ----------------------
+    std::cout << "cycle_plan (cycles.json):\n";
+    try {
+        wl::cycle_plan::CyclePlanStore store(wl::paths::cycles_path(repo_root));
+        auto original = read_file(store.path());
+        auto file1 = wl::json::decode_cycle_plan(original);
+        auto enc1 = wl::json::encode_cycle_plan(file1);
+        auto file2 = wl::json::decode_cycle_plan(enc1);
+        auto enc2 = wl::json::encode_cycle_plan(file2);
+        check(file1 == file2 && enc1 == enc2, "round-trip cycles.json");
+        check(enc1 == original, "canonical (byte-identical to disk) cycles.json");
+
+        check(file1.cycles.size() == 1 && file1.cycles.front().id == "hybrid-8",
+              "cycles.json has the hybrid-8 cycle");
+        const auto& plan_cycle = file1.cycles.front();
+        check(plan_cycle.sessions.size() == 8, "hybrid-8 has 8 sessions (" + std::to_string(plan_cycle.sessions.size()) + ")");
+        check(plan_cycle.sessions.front().cycle_day == "A1" && plan_cycle.sessions.front().type == wl::cycle_plan::SessionType::metcon,
+              "first session is A1/metcon");
+        check(plan_cycle.skipped && plan_cycle.skipped->size() == 1, "hybrid-8 has one skipped slot");
+
+        check(wl::cycle_plan::validate(file1).empty(), "cycles.json as loaded is valid");
+
+        // Structural edits: exercise on a copy so the loaded file (checked above) is
+        // untouched by the mutation checks below.
+        auto edited = plan_cycle;
+        auto extra = edited.sessions.front();
+        extra.cycle_day = "E1";
+        wl::cycle_plan::insert_session(edited, 1, extra);
+        check(edited.sessions.size() == 9 && edited.sessions[1].cycle_day == "E1",
+              "insert_session inserts at the given index");
+
+        wl::cycle_plan::move_session(edited, 1, 8);
+        check(edited.sessions.back().cycle_day == "E1" && edited.sessions[1].cycle_day == "A2",
+              "move_session relocates without disturbing the others' relative order");
+
+        wl::cycle_plan::remove_session(edited, 8);
+        check(edited.sessions.size() == 8 && edited == plan_cycle, "remove_session undoes the insert (back to original)");
+
+        auto edited_session = plan_cycle.sessions.front();
+        auto block_count = edited_session.blocks.size();
+        auto extra_block = edited_session.blocks.front();
+        wl::cycle_plan::insert_block(edited_session, 0, extra_block);
+        check(edited_session.blocks.size() == block_count + 1 && edited_session.blocks[0] == extra_block,
+              "insert_block inserts at the given index");
+        wl::cycle_plan::remove_block(edited_session, 0);
+        check(edited_session.blocks.size() == block_count && edited_session == plan_cycle.sessions.front(),
+              "remove_block undoes the insert (back to original)");
+
+        bool threw = false;
+        try {
+            wl::cycle_plan::remove_session(edited, 99);
+        } catch (const std::out_of_range&) {
+            threw = true;
+        }
+        check(threw, "remove_session throws std::out_of_range on a bad index");
+
+        // Invalid-by-construction file: a bad cycle_day and a duplicate id.
+        wl::cycle_plan::File bad;
+        auto bad_cycle = plan_cycle;
+        bad_cycle.sessions.front().cycle_day = "Z9";
+        bad.cycles = {bad_cycle, bad_cycle}; // same id twice
+        auto violations = wl::cycle_plan::validate(bad);
+        check(violations.size() >= 2, "validate() flags the bad cycle_day and the duplicate id (" +
+                                           std::to_string(violations.size()) + " violation(s))");
+
+        auto tmp_dir = std::filesystem::temp_directory_path() / "wl-verify-cycle-plan";
+        std::error_code ec;
+        std::filesystem::create_directories(tmp_dir, ec);
+        wl::cycle_plan::CyclePlanStore tmp_store(tmp_dir / "cycles.json");
+        tmp_store.save(file1);
+        auto reloaded = tmp_store.load();
+        check(reloaded == file1, "CyclePlanStore save -> load round-trips");
+
+        bool save_threw = false;
+        try {
+            wl::cycle_plan::File invalid_file;
+            invalid_file.cycles = {bad_cycle};
+            tmp_store.save(invalid_file);
+        } catch (const std::runtime_error&) {
+            save_threw = true;
+        }
+        check(save_threw, "CyclePlanStore::save() refuses to write an invalid file");
+        std::filesystem::remove_all(tmp_dir, ec);
+    } catch (const std::exception& e) {
+        check(false, std::string("cycle_plan: ") + e.what());
     }
 
     std::cout << (g_failures == 0 ? "\n\xE2\x9C\x85 ALL CHECKS PASSED"

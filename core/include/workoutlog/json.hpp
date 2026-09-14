@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "workoutlog/cycle_plan.hpp"
 #include "workoutlog/models.hpp"
 
 // Port of app/Sources/WorkoutLogCore/Coding.swift. Both platforms write through this
@@ -14,11 +15,13 @@ namespace workoutlog::json {
 // JSON or a schema violation (unknown block "type", missing required key, etc).
 Session decode_session(const std::string& utf8_json);
 Catalogue decode_catalogue(const std::string& utf8_json);
+cycle_plan::File decode_cycle_plan(const std::string& utf8_json);
 
 // Canonical writer: 2-space indent, sorted keys, raw UTF-8 (never \uXXXX), unescaped
 // slashes, integral doubles written as integers, absent optionals omitted (never
 // null), trailing newline.
 std::string encode_session(const Session&);
+std::string encode_cycle_plan(const cycle_plan::File&);
 
 // Rewrites arbitrary JSON (not just a Session -- also exercises.json, cycles.json)
 // through the same writer policy without going through a typed model, so unmodelled

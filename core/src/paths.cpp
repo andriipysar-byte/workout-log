@@ -85,4 +85,8 @@ std::filesystem::path muscle_map_template_path(const std::filesystem::path& repo
     return repo_root / "app/Resources/muscle-map.svg";
 }
 
+std::filesystem::path cycles_path(const std::filesystem::path& repo_root) {
+    return repo_root / "cycles.json";
+}
+
 } // namespace workoutlog::paths
