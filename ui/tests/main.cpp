@@ -160,6 +160,15 @@ int main(int argc, char** argv) {
     // Pinning "software" here keeps the golden PPMs byte-identical regardless of
     // what GL/EGL/X11/Wayland libraries the host happens to have installed.
     SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, "software", SDL_HINT_OVERRIDE);
+    // Even with the software renderer pinned, SDL's blit/blend routines still
+    // dispatch on whatever SIMD extensions SDL_GetCPUFeatures() detects at
+    // runtime (SDL_blit_A.c/SDL_blit_N.c), so two machines with different CPUs
+    // reach different code paths for the same drawing calls and round pixel
+    // blending by a few ULPs differently -- the remaining source of goldens
+    // matching on one box and not another after the driver was already pinned.
+    // "-all" clears every bit SDL would otherwise detect, forcing the plain
+    // scalar C fallback everywhere.
+    SDL_SetHintWithPriority(SDL_HINT_CPU_FEATURE_MASK, "-all", SDL_HINT_OVERRIDE);
 
     int failures = 0;
     try {
