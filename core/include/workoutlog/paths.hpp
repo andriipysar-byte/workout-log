@@ -24,5 +24,6 @@ std::filesystem::path resolve_repo_root(const std::string& hint = {});
 // them here instead of copying the literals again.
 std::filesystem::path catalogue_path(const std::filesystem::path& repo_root);
 std::filesystem::path muscle_map_template_path(const std::filesystem::path& repo_root);
+std::filesystem::path cycles_path(const std::filesystem::path& repo_root);
 
 } // namespace workoutlog::paths

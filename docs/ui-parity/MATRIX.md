@@ -9,7 +9,7 @@ visible at a glance.
 | Screen / feature | SwiftUI source | ImGui source | Status | Notes |
 |---|---|---|---|---|
 | App shell (sidebar + detail + status bar) | `WorkoutLogApp.swift`, `Views.swift` (`RootView`) | `root_view.hpp/cpp` | Done | |
-| List/Cycle tab switch | `RootView` (segmented `Picker`) | `root_view.cpp` (`widgets::segmented`) | Done | |
+| List/Cycle/Cycle plan tab switch | `RootView` (segmented `Picker`, 2 tabs) | `root_view.cpp` (`widgets::segmented`, 3 tabs) | **ImGui ahead** | ImGui has a third tab, Cycle plan, that SwiftUI doesn't have yet — see the Cycle plan editor row below. |
 | Session file list (sidebar) | `RootView` (`List(model.files...)`) | `root_view.cpp` (`draw_sidebar`) | Done | |
 | Choose folder | `AppModel.chooseFolder()` (`NSOpenPanel`) | `platform.hpp/cpp` (`request_folder_dialog`) | Done | **Divergence (platform-forced):** ImGui also has a manual "type a path" fallback text field (`root_view.cpp:38-49`) because Linux has no guaranteed folder-picker portal (no XDG portal / zenity). Not a SwiftUI feature; keep it. |
 | Reload folder | `RootView` toolbar button | `root_view.cpp` "Reload" button | Done | |
@@ -34,6 +34,12 @@ visible at a glance.
 
 ## Screens with no counterpart yet
 
-None currently — every SwiftUI screen has an ImGui counterpart as of the
-reviewed commit. If a new SwiftUI screen is added, add a row here immediately
-(status **Missing**) even before the ImGui side exists, so the gap is visible.
+| Screen / feature | SwiftUI source | ImGui source | Status | Notes |
+|---|---|---|---|---|
+| Cycle plan editor (add/edit/reorder sessions & blocks in `cycles.json`) | — | `cycle_editor.hpp/cpp` | **ImGui only** | Edits the cycle *definition* (`cycles.json`/`cycles.schema.json`, `workoutlog::cycle_plan`, #16) — distinct from the Cycle tab above, which is a read-only view derived from already-logged sessions. This is the first implementation of either editor (issue #20); the SwiftUI counterpart is tracked separately as issue #19 and doesn't exist yet. Cycle-level add/remove isn't exposed on either side because the core CRUD doesn't cover it — only sessions/blocks within an existing cycle. |
+
+Every other SwiftUI screen has an ImGui counterpart as of the reviewed commit
+above; the row here is the one exception, added the moment its first
+implementation (ImGui) landed, per the rule below. If a new screen is added on
+either side, add a row immediately (status **Missing**/**ImGui only**/**SwiftUI
+only** as appropriate) even before the other side exists, so the gap is visible.

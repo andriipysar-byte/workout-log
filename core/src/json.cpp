@@ -71,6 +71,14 @@ std::optional<E> get_opt_enum(const nl& j, const char* key,
     return v;
 }
 
+template <typename E>
+E require_enum(const nl& j, const char* key, std::optional<E> (*parse)(std::string_view), const char* ctx) {
+    auto s = require_as<std::string>(j, key, ctx);
+    auto v = parse(s);
+    if (!v) fail(std::string(ctx) + ": invalid value \"" + s + "\" for \"" + key + "\"");
+    return *v;
+}
+
 // --------------------------------------------------------------------- WorkSet ---
 
 nl encode(const WorkSet& s) {
@@ -323,6 +331,175 @@ Catalogue decode_catalogue_json(const nl& j) {
     return c;
 }
 
+// ------------------------------------------------------------------ cycle_plan ---
+// Codec for cycles.json/cycles.schema.json (workoutlog/cycle_plan.hpp) -- a
+// distinct file from a logged Session but reusing this same writer policy and the
+// require/get_opt helpers above.
+
+nl encode(const cycle_plan::BlockExercise& e) {
+    nl j = nl::object();
+    j["name"] = e.name;
+    set_num_if(j, "weight_kg", e.weight_kg);
+    return j;
+}
+
+cycle_plan::BlockExercise decode_cycle_plan_block_exercise(const nl& j) {
+    cycle_plan::BlockExercise e;
+    e.name = require_as<std::string>(j, "name", "cycle_plan::BlockExercise");
+    e.weight_kg = get_opt_double(j, "weight_kg");
+    return e;
+}
+
+nl encode(const cycle_plan::Block& b) {
+    nl j = nl::object();
+    j["type"] = cycle_plan::to_string(b.type);
+    j["role"] = cycle_plan::to_string(b.role);
+    set_if(j, "machine", b.machine);
+    set_num_if(j, "duration_min", b.duration_min);
+    set_if(j, "exercise", b.exercise);
+    if (b.sets_reps.has_value()) j["sets_reps"] = *b.sets_reps;
+    if (b.format.has_value()) j["format"] = to_string(*b.format);
+    if (b.scheme.has_value()) j["scheme"] = *b.scheme;
+    if (b.exercises.has_value()) {
+        nl exs = nl::array();
+        for (const auto& e : *b.exercises) exs.push_back(encode(e));
+        j["exercises"] = std::move(exs);
+    }
+    set_if(j, "notes", b.notes);
+    return j;
+}
+
+cycle_plan::Block decode_cycle_plan_block_json(const nl& j) {
+    cycle_plan::Block b;
+    b.type = require_enum<cycle_plan::BlockType>(j, "type", cycle_plan::block_type_from_string, "cycle_plan::Block");
+    b.role = require_enum<cycle_plan::BlockRole>(j, "role", cycle_plan::block_role_from_string, "cycle_plan::Block");
+    b.machine = get_opt<std::string>(j, "machine");
+    b.duration_min = get_opt_double(j, "duration_min");
+    b.exercise = get_opt<std::string>(j, "exercise");
+    b.sets_reps = get_opt<std::vector<int>>(j, "sets_reps");
+    b.format = get_opt_enum<MetconFormat>(j, "format", metcon_format_from_string, "cycle_plan::Block");
+    b.scheme = get_opt<std::vector<int>>(j, "scheme");
+    if (auto it = j.find("exercises"); it != j.end() && !it->is_null()) {
+        if (!it->is_array()) fail("cycle_plan::Block: \"exercises\" must be an array");
+        std::vector<cycle_plan::BlockExercise> exs;
+        for (const auto& ej : *it) exs.push_back(decode_cycle_plan_block_exercise(ej));
+        b.exercises = std::move(exs);
+    }
+    b.notes = get_opt<std::string>(j, "notes");
+    return b;
+}
+
+nl encode(const cycle_plan::Session& s) {
+    nl j = nl::object();
+    j["cycle_day"] = s.cycle_day;
+    set_if(j, "week", s.week);
+    if (s.weekday.has_value()) j["weekday"] = cycle_plan::to_string(*s.weekday);
+    j["type"] = cycle_plan::to_string(s.type);
+    set_if(j, "title", s.title);
+    set_if(j, "session_notes", s.session_notes);
+    nl blocks = nl::array();
+    for (const auto& b : s.blocks) blocks.push_back(encode(b));
+    j["blocks"] = std::move(blocks);
+    return j;
+}
+
+cycle_plan::Session decode_cycle_plan_session_json(const nl& j) {
+    cycle_plan::Session s;
+    s.cycle_day = require_as<std::string>(j, "cycle_day", "cycle_plan::Session");
+    s.week = get_opt<int>(j, "week");
+    s.weekday = get_opt_enum<cycle_plan::Weekday>(j, "weekday", cycle_plan::weekday_from_string, "cycle_plan::Session");
+    s.type = require_enum<cycle_plan::SessionType>(j, "type", cycle_plan::session_type_from_string, "cycle_plan::Session");
+    s.title = get_opt<std::string>(j, "title");
+    s.session_notes = get_opt<std::string>(j, "session_notes");
+    const nl& blocks = require(j, "blocks", "cycle_plan::Session");
+    if (!blocks.is_array()) fail("cycle_plan::Session: \"blocks\" must be an array");
+    for (const auto& bj : blocks) s.blocks.push_back(decode_cycle_plan_block_json(bj));
+    return s;
+}
+
+nl encode(const cycle_plan::Skip& sk) {
+    nl j = nl::object();
+    set_if(j, "week", sk.week);
+    if (sk.weekday.has_value()) j["weekday"] = cycle_plan::to_string(*sk.weekday);
+    j["reason"] = sk.reason;
+    return j;
+}
+
+cycle_plan::Skip decode_cycle_plan_skip(const nl& j) {
+    cycle_plan::Skip sk;
+    sk.week = get_opt<int>(j, "week");
+    sk.weekday = get_opt_enum<cycle_plan::Weekday>(j, "weekday", cycle_plan::weekday_from_string, "cycle_plan::Skip");
+    sk.reason = require_as<std::string>(j, "reason", "cycle_plan::Skip");
+    return sk;
+}
+
+nl encode(const cycle_plan::Cycle& c) {
+    nl j = nl::object();
+    j["id"] = c.id;
+    j["name"] = c.name;
+    if (c.training_days.has_value()) {
+        nl days = nl::array();
+        for (auto d : *c.training_days) days.push_back(cycle_plan::to_string(d));
+        j["training_days"] = std::move(days);
+    }
+    set_if(j, "start_date", c.start_date);
+    nl sessions = nl::array();
+    for (const auto& s : c.sessions) sessions.push_back(encode(s));
+    j["sessions"] = std::move(sessions);
+    if (c.skipped.has_value()) {
+        nl sk = nl::array();
+        for (const auto& s : *c.skipped) sk.push_back(encode(s));
+        j["skipped"] = std::move(sk);
+    }
+    return j;
+}
+
+cycle_plan::Cycle decode_cycle_plan_cycle(const nl& j) {
+    cycle_plan::Cycle c;
+    c.id = require_as<std::string>(j, "id", "cycle_plan::Cycle");
+    c.name = require_as<std::string>(j, "name", "cycle_plan::Cycle");
+    if (auto it = j.find("training_days"); it != j.end() && !it->is_null()) {
+        if (!it->is_array()) fail("cycle_plan::Cycle: \"training_days\" must be an array");
+        std::vector<cycle_plan::Weekday> days;
+        for (const auto& dj : *it) {
+            auto raw = dj.get<std::string>();
+            auto v = cycle_plan::weekday_from_string(raw);
+            if (!v) fail("cycle_plan::Cycle: invalid value \"" + raw + R"(" for "training_days")");
+            days.push_back(*v);
+        }
+        c.training_days = std::move(days);
+    }
+    c.start_date = get_opt<std::string>(j, "start_date");
+    const nl& sessions = require(j, "sessions", "cycle_plan::Cycle");
+    if (!sessions.is_array()) fail("cycle_plan::Cycle: \"sessions\" must be an array");
+    for (const auto& sj : sessions) c.sessions.push_back(decode_cycle_plan_session_json(sj));
+    if (auto it = j.find("skipped"); it != j.end() && !it->is_null()) {
+        if (!it->is_array()) fail("cycle_plan::Cycle: \"skipped\" must be an array");
+        std::vector<cycle_plan::Skip> sk;
+        for (const auto& skj : *it) sk.push_back(decode_cycle_plan_skip(skj));
+        c.skipped = std::move(sk);
+    }
+    return c;
+}
+
+nl encode(const cycle_plan::File& f) {
+    nl j = nl::object();
+    set_if(j, "$comment", f.comment);
+    nl cycles = nl::array();
+    for (const auto& c : f.cycles) cycles.push_back(encode(c));
+    j["cycles"] = std::move(cycles);
+    return j;
+}
+
+cycle_plan::File decode_cycle_plan_file_json(const nl& j) {
+    cycle_plan::File f;
+    f.comment = get_opt<std::string>(j, "$comment");
+    const nl& cycles = require(j, "cycles", "cycle_plan::File");
+    if (!cycles.is_array()) fail("cycle_plan::File: \"cycles\" must be an array");
+    for (const auto& cj : cycles) f.cycles.push_back(decode_cycle_plan_cycle(cj));
+    return f;
+}
+
 nl parse(const std::string& utf8_json) {
     try {
         return nl::parse(utf8_json);
@@ -358,8 +535,36 @@ Catalogue decode_catalogue(const std::string& utf8_json) {
     return decode_catalogue_json(parse(utf8_json));
 }
 
+cycle_plan::File decode_cycle_plan(const std::string& utf8_json) {
+    return decode_cycle_plan_file_json(parse(utf8_json));
+}
+
+// Single-value counterparts to decode_cycle_plan/encode_cycle_plan -- what wl_cycle
+// (tools/wl_cycle/main.cpp) reads/writes for its insert-session/replace-session and
+// insert-block/replace-block subcommands, which take a Session or Block fragment
+// rather than a whole cycles.json.
+cycle_plan::Session decode_cycle_plan_session(const std::string& utf8_json) {
+    return decode_cycle_plan_session_json(parse(utf8_json));
+}
+
+cycle_plan::Block decode_cycle_plan_block(const std::string& utf8_json) {
+    return decode_cycle_plan_block_json(parse(utf8_json));
+}
+
 std::string encode_session(const Session& s) {
     return encode(s).dump(2) + "\n";
+}
+
+std::string encode_cycle_plan(const cycle_plan::File& f) {
+    return encode(f).dump(2) + "\n";
+}
+
+std::string encode_cycle_plan_session(const cycle_plan::Session& s) {
+    return encode(s).dump(2) + "\n";
+}
+
+std::string encode_cycle_plan_block(const cycle_plan::Block& b) {
+    return encode(b).dump(2) + "\n";
 }
 
 std::string canonicalize(const std::string& utf8_json) {

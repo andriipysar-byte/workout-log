@@ -11,6 +11,7 @@ add_library(wl_ui_core STATIC
     svg_texture.cpp
     calendar_view.cpp
     cycle_view.cpp
+    cycle_editor.cpp
     session_editor.cpp
     root_view.cpp
 )
