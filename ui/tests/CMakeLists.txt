@@ -18,4 +18,8 @@ add_test(NAME wl_ui_snapshot COMMAND wl_ui_snapshot WORKING_DIRECTORY ${CMAKE_SO
 # plain backtrace: SDL_EGL_InitializeOffscreen -> ... -> libdbus-1.so, no frame in
 # this repo's code). ASAN_OPTIONS is inert outside an ASan build, so this is safe to
 # set unconditionally rather than only under the gcc-asan-ubsan preset.
-set_tests_properties(wl_ui_snapshot PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
+# ENVIRONMENT replaces, rather than merges with, the ASAN_OPTIONS the test-asan-ubsan
+# preset sets project-wide, so the full baseline has to be restated here rather than
+# just the leak-detection override.
+set_tests_properties(wl_ui_snapshot PROPERTIES ENVIRONMENT
+    "ASAN_OPTIONS=detect_container_overflow=0:detect_leaks=0:halt_on_error=1")

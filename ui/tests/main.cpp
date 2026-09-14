@@ -92,7 +92,8 @@ Image read_ppm(const std::filesystem::path& path) {
     int height = 0;
     int maxval = 0;
     in >> magic >> width >> height >> maxval;
-    if (!in || magic != "P6" || width <= 0 || height <= 0 || maxval != 255)
+    constexpr int kMaxDim = 1 << 14; // generous for a snapshot golden; blocks bad_alloc on a corrupted header
+    if (!in || magic != "P6" || width <= 0 || height <= 0 || width > kMaxDim || height > kMaxDim || maxval != 255)
         throw std::runtime_error("malformed PPM header in " + path.string());
     in.get(); // the single whitespace byte the P6 header ends with
 
@@ -146,7 +147,11 @@ int main(int argc, char** argv) {
     std::error_code ec;
     std::filesystem::create_directories(golden_dir, ec);
 
-    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "offscreen");
+    // SDL_HINT_OVERRIDE is required here: at normal priority SDL_SetHint() is a
+    // no-op whenever SDL_VIDEO_DRIVER/SDL_VIDEODRIVER is already exported in the
+    // caller's environment, which would silently defeat the offscreen rendering
+    // this harness's determinism depends on.
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
 
     int failures = 0;
     try {
