@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Core + CLI tools (workoutlog, wl_verify, wl_map, wl_fmt) across every build
+  # profile AGENTS.md documents (§4.1, §4.3). WL_BUILD_UI is OFF here, so these
+  # legs never touch SDL3/ImGui/lunasvg -- fast, and proves the "no UI deps in
+  # the core" rule in CMakeLists.txt actually holds.
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [gcc, clang, gcc-asan-ubsan, gcc-tsan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang
+        if: startsWith(matrix.preset, 'clang')
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }} -j
+
+      - name: wl_verify
+        run: ./builds/${{ matrix.preset }}/bin/wl_verify
+
+      - name: ctest
+        run: ctest --preset ${{ matrix.preset }}
+
+      - name: wl_fmt --check (data/ stays canonical)
+        if: matrix.preset == 'gcc'
+        run: ./builds/gcc/bin/wl_fmt --check data/*.json cycles.json exercises.json
+
+  # SDL3 + Dear ImGui screens, offscreen (SDL_VIDEODRIVER=offscreen, forced by
+  # the harness itself -- see ui/tests/main.cpp) so this needs no display or
+  # xvfb. Not part of the `core` matrix: WL_BUILD_UI has no preset of its own
+  # (CMakePresets.json keeps the UI opt-in), so this job configures directly,
+  # the same way CLAUDE.md's own C++ quickstart does.
+  ui-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache fetched dependencies (SDL3/ImGui/lunasvg/nlohmann_json)
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: ctest (wl_verify + wl_ui_snapshot)
+        run: ctest --test-dir build --output-on-failure
+
+  # Informational: .clang-tidy findings do not fail the `tidy` target itself
+  # (see misc/cmake/Tidy.cmake), so this job surfaces new diagnostics in the
+  # log without gating the PR. AGENTS.md §4.2 still requires a clean run
+  # before a C++ change is "done" -- this is a backstop, not a substitute.
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache fetched dependencies (SDL3/ImGui/lunasvg/nlohmann_json)
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON
+
+      - name: clang-tidy
+        run: cmake --build build --target tidy
+
+  # The Swift half (app/) is what macOS actually ships today; only a full-Xcode
+  # runner can run XCTest (CLAUDE.md notes Command Line Tools can't).
+  swift-macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: swift build
+        run: swift build
+
+      - name: swift test
+        run: swift test
+
+      - name: wl-verify
+        run: WORKOUTLOG_DATA=../data swift run wl-verify
