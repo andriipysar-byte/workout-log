@@ -6,20 +6,23 @@
 #include <string>
 
 #include "app_model.hpp"
+#include "cycle_editor.hpp"
 #include "cycle_view.hpp"
 #include "platform.hpp"
 #include "session_editor.hpp"
 
 // The application shell, ported from RootView in Views.swift: the sidebar
 // (List/Cycle switch, file list, folder + reload), the detail pane dispatch, and
-// the status bar.
+// the status bar. The third tab, Cycle plan (cycle_editor), has no SwiftUI
+// counterpart yet (issue #19) -- see cycle_editor.hpp.
 namespace workoutlog::ui::root_view {
 
-enum class Tab { list, cycle };
+enum class Tab { list, cycle, cycle_plan };
 
 struct State {
     Tab tab = Tab::list;
     cycle_view::State cycle;
+    cycle_editor::State cycle_editor;
     session_editor::State editor;
 
     // In-app fallback for the folder picker (Platform::request_folder_dialog can

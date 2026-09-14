@@ -83,9 +83,8 @@ std::string require_flag(const std::map<std::string, std::string>& flags, const 
     return it->second;
 }
 
-Cycle& find_cycle(File& file, const std::string& id) {
-    for (auto& c : file.cycles)
-        if (c.id == id) return c;
+Cycle& require_cycle(File& file, const std::string& id) {
+    if (auto* c = workoutlog::cycle_plan::find_cycle(file, id)) return *c;
     throw std::runtime_error("no cycle with id \"" + id + "\"");
 }
 
@@ -112,7 +111,7 @@ void cmd_list(File& file, const std::map<std::string, std::string>& flags) {
             std::cout << c.id << "  \"" << c.name << "\"  (" << c.sessions.size() << " session(s))\n";
         return;
     }
-    const auto& sessions = find_cycle(file, it->second).sessions;
+    const auto& sessions = require_cycle(file, it->second).sessions;
     for (std::size_t i = 0; i < sessions.size(); i++) {
         const auto& s = sessions[i];
         std::cout << i << "  " << s.cycle_day << "  " << workoutlog::cycle_plan::to_string(s.type);
@@ -122,7 +121,7 @@ void cmd_list(File& file, const std::map<std::string, std::string>& flags) {
 }
 
 void cmd_show_session(File& file, const std::map<std::string, std::string>& flags) {
-    auto& cycle = find_cycle(file, require_flag(flags, "cycle"));
+    auto& cycle = require_cycle(file, require_flag(flags, "cycle"));
     auto index = parse_index(require_flag(flags, "index"), "index");
     if (index >= cycle.sessions.size())
         throw std::runtime_error("session index " + std::to_string(index) + " out of range (size " +
@@ -131,7 +130,7 @@ void cmd_show_session(File& file, const std::map<std::string, std::string>& flag
 }
 
 void cmd_show_block(File& file, const std::map<std::string, std::string>& flags) {
-    auto& cycle = find_cycle(file, require_flag(flags, "cycle"));
+    auto& cycle = require_cycle(file, require_flag(flags, "cycle"));
     auto session_index = parse_index(require_flag(flags, "session"), "session");
     if (session_index >= cycle.sessions.size())
         throw std::runtime_error("session index " + std::to_string(session_index) + " out of range (size " +
@@ -157,7 +156,7 @@ void run_mutation(const std::string& command, File& file, const std::map<std::st
     };
     if (!is(kSessionCommands) && !is(kBlockCommands)) throw std::runtime_error("unknown command \"" + command + "\"");
 
-    auto& cycle = find_cycle(file, require_flag(flags, "cycle"));
+    auto& cycle = require_cycle(file, require_flag(flags, "cycle"));
 
     if (command == "insert-session") {
         auto index = parse_index(require_flag(flags, "index"), "index");

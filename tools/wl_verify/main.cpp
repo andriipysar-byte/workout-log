@@ -484,6 +484,9 @@ int main() {
 
         check(wl::cycle_plan::validate(file1).empty(), "cycles.json as loaded is valid");
 
+        check(wl::cycle_plan::find_cycle(file1, "hybrid-8") == &file1.cycles.front(), "find_cycle finds by id");
+        check(wl::cycle_plan::find_cycle(file1, "no-such-cycle") == nullptr, "find_cycle returns nullptr, not a throw");
+
         // Structural edits: exercise on a copy so the loaded file (checked above) is
         // untouched by the mutation checks below.
         auto edited = plan_cycle;

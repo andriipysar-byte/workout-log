@@ -8,6 +8,7 @@ add_executable(wl_ui
     svg_texture.cpp
     calendar_view.cpp
     cycle_view.cpp
+    cycle_editor.cpp
     session_editor.cpp
     root_view.cpp
 )

@@ -44,6 +44,10 @@ public:
     void set_mode(WeightingMode mode) { mode_ = mode; }
     WeightingMode mode() const { return mode_; }
 
+    // Resolved once at startup (paths::resolve_repo_root(), see the constructor);
+    // empty if that failed. cycle_editor needs this to find cycles.json without
+    // re-resolving it a second time.
+    const std::filesystem::path& repo_root() const { return repo_root_; }
     const std::filesystem::path& folder() const { return folder_; }
     const std::vector<std::filesystem::path>& files() const { return files_; }
     const std::optional<std::filesystem::path>& selection() const { return selection_; }

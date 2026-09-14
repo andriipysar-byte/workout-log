@@ -14,11 +14,19 @@ namespace workoutlog::ui::root_view {
 
 namespace {
 
+std::string tab_label(Tab t) {
+    switch (t) {
+        case Tab::list: return "List";
+        case Tab::cycle: return "Cycle";
+        case Tab::cycle_plan: return "Cycle plan";
+    }
+    return {};
+}
+
 void draw_sidebar(Platform& platform, AppModel& model, State& state) {
-    static constexpr std::array<Tab, 2> kTabs = {Tab::list, Tab::cycle};
+    static constexpr std::array<Tab, 3> kTabs = {Tab::list, Tab::cycle, Tab::cycle_plan};
     Tab tab = state.tab;
-    if (widgets::segmented<Tab>("tab_picker", std::span<const Tab>(kTabs), tab,
-                                 [](Tab t) { return std::string(t == Tab::list ? "List" : "Cycle"); })) {
+    if (widgets::segmented<Tab>("tab_picker", std::span<const Tab>(kTabs), tab, tab_label)) {
         state.tab = tab;
     }
     ImGui::Separator();
@@ -70,6 +78,10 @@ void draw_detail(SDL_Renderer& renderer, AppModel& model, State& state, ImFont* 
         // visibly happens until the user flips the picker themselves. Switching
         // back to List here is a one-line, obviously better fix, not a corner cut.
         if (cycle_view::draw(renderer, model, state.cycle)) state.tab = Tab::list;
+        return;
+    }
+    if (state.tab == Tab::cycle_plan) {
+        cycle_editor::draw(model, state.cycle_editor);
         return;
     }
     if (model.has_session()) {
