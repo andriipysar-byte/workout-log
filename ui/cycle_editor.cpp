@@ -6,9 +6,11 @@
 #include <charconv>
 #include <cstdint>
 #include <span>
+#include <stdexcept>
 #include <utility>
 
 #include "theme.hpp"
+#include "workoutlog/notation.hpp"
 #include "workoutlog/paths.hpp"
 
 // Deliberately qualifies every workoutlog::cycle_plan:: type in full throughout
@@ -20,13 +22,22 @@ namespace workoutlog::ui::cycle_editor {
 
 namespace {
 
-// ------------------------------------------------------------- load / save ---
-
 void load(AppModel& model, State& state) {
     state.attempted_load = true;
     try {
         cycle_plan::CyclePlanStore store(paths::cycles_path(model.repo_root()));
-        state.file = store.load();
+        cycle_plan::File file = store.load();
+        // Reject the same violations save() would (duplicate cycle id, bad
+        // cycle_day, ...) up front: find_cycle() resolves by id, so editing a
+        // file with a duplicate id would otherwise silently target the wrong
+        // cycle instead of surfacing the problem.
+        auto violations = cycle_plan::validate(file);
+        if (!violations.empty()) {
+            std::string msg = store.path().string() + " is invalid:\n";
+            for (const auto& v : violations) msg += "  - " + v + "\n";
+            throw std::runtime_error(msg);
+        }
+        state.file = std::move(file);
         state.load_error.reset();
     } catch (const std::exception& e) {
         state.load_error = e.what();
@@ -50,15 +61,6 @@ void save(AppModel& model, State& state) {
     }
 }
 
-// --------------------------------------------------- scratch field helpers ---
-
-std::optional<int> parse_int_strict(std::string_view text) {
-    int value = 0;
-    const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
-    if (ec != std::errc() || ptr != text.data() + text.size()) return std::nullopt;
-    return value;
-}
-
 // "6,6,6,6,6" <-> vector<int>, the planning-shorthand text form cycle_plan::Block
 // uses for sets_reps/scheme. Same commit-on-deactivate discipline as
 // widgets::optional_number_field: the model is untouched while typing, and a token
@@ -74,7 +76,7 @@ std::optional<std::vector<int>> parse_int_list(const std::string& text) {
         const std::size_t start = token.find_first_not_of(" \t");
         if (start != std::string::npos) {
             const std::size_t end = token.find_last_not_of(" \t");
-            if (auto v = parse_int_strict(token.substr(start, end - start + 1))) out.push_back(*v);
+            if (auto v = notation::parse_int_strict(token.substr(start, end - start + 1))) out.push_back(*v);
         }
         if (comma == std::string::npos) break;
         pos = comma + 1;
@@ -94,7 +96,16 @@ std::string int_list_to_text(const std::vector<int>& v) {
 void optional_int_list_field(const char* label, std::optional<std::vector<int>>& value) {
     std::string text = value.has_value() ? int_list_to_text(*value) : std::string();
     ImGui::InputText(label, &text);
-    if (ImGui::IsItemDeactivatedAfterEdit()) value = parse_int_list(text);
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        if (text.find_first_not_of(" \t") == std::string::npos) {
+            value = std::nullopt;
+        } else if (auto parsed = parse_int_list(text)) {
+            value = std::move(parsed);
+        }
+        // else: unparseable on deactivation, discarded back to the last committed
+        // value, never coerced (AGENTS.md 1.2.2) -- same discipline as
+        // optional_int_field below.
+    }
 }
 
 void optional_int_field(const char* label, std::optional<int>& value) {
@@ -103,7 +114,7 @@ void optional_int_field(const char* label, std::optional<int>& value) {
     if (ImGui::IsItemDeactivatedAfterEdit()) {
         if (text.empty()) {
             value = std::nullopt;
-        } else if (auto v = parse_int_strict(text)) {
+        } else if (auto v = notation::parse_int_strict(text)) {
             value = v;
         }
         // else: unparseable on deactivation, discarded back to the last committed
@@ -175,8 +186,6 @@ constexpr std::array<MetconFormat, 6> kMetconFormats = {MetconFormat::for_time, 
                                                           MetconFormat::emom,    MetconFormat::intervals,
                                                           MetconFormat::ladder,  MetconFormat::chipper};
 
-// --------------------------------------------------------- reorderable list ---
-
 enum class ListAction : std::uint8_t { none, remove, move_up, move_down };
 
 struct RowResult {
@@ -205,8 +214,6 @@ RowResult draw_list_row(const char* label, bool selected, bool can_move_up, bool
     return result;
 }
 
-// ------------------------------------------------------------- cycle picker ---
-
 void draw_cycle_picker(State& state) {
     ImGui::TextUnformatted("Cycles");
     ImGui::Separator();
@@ -230,8 +237,6 @@ void draw_cycle_picker(State& state) {
     // sessions and blocks within an existing cycle, not the top-level cycle list
     // itself -- so neither does this screen (see cycle_editor.hpp).
 }
-
-// ------------------------------------------------------------- session list ---
 
 void draw_session_list(cycle_plan::Cycle& cycle, State& state) {
     ImGui::TextUnformatted("Sessions");
@@ -284,8 +289,6 @@ void draw_session_list(cycle_plan::Cycle& cycle, State& state) {
     }
 }
 
-// ------------------------------------------------------------ session fields ---
-
 void draw_session_fields(cycle_plan::Session& session) {
     ImGui::TextUnformatted("Session");
     const float w = theme::tokens::field_max_width;
@@ -325,8 +328,6 @@ void draw_session_fields(cycle_plan::Session& session) {
     ImGui::SetNextItemWidth(-1.0f);
     widgets::optional_text_field("##session_notes", session.session_notes);
 }
-
-// -------------------------------------------------------------- block list ---
 
 void draw_block_list(cycle_plan::Session& session, State& state) {
     ImGui::TextUnformatted("Blocks");
@@ -377,8 +378,6 @@ void draw_block_list(cycle_plan::Session& session, State& state) {
         }
     }
 }
-
-// ------------------------------------------------------------- block fields ---
 
 void draw_block_exercises(cycle_plan::Block& block, BlockUiState& ui) {
     ImGui::TextUnformatted("Exercises");
