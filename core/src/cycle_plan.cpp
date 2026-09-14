@@ -151,6 +151,12 @@ void move_block(Session& session, std::size_t from, std::size_t to) {
     checked_move(session.blocks, from, to, "cycle_plan::move_block");
 }
 
+Cycle* find_cycle(File& file, std::string_view id) {
+    for (auto& c : file.cycles)
+        if (c.id == id) return &c;
+    return nullptr;
+}
+
 std::vector<std::string> validate(const File& file) {
     std::vector<std::string> violations;
     std::set<std::string> seen_ids;

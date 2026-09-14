@@ -97,6 +97,11 @@ struct File {
     bool operator==(const File&) const = default;
 };
 
+// nullptr for "not found" (AGENTS.md 1.1.3) rather than throwing -- callers decide
+// what a missing id means (a hard error for the wl_cycle CLI, an empty selector for
+// the ImGui/SwiftUI editors).
+Cycle* find_cycle(File& file, std::string_view id);
+
 // Bounds-checked structural edits, shared by every caller that mutates a cycle (the
 // wl_cycle CLI, both UI editors) so index arithmetic isn't reimplemented at each call
 // site. Each throws std::out_of_range naming the operation and the bad index --
