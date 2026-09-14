@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter here (deliberately, unlike the push trigger above):
+  # a PR stacked on another open PR's branch (e.g. #29 based on #28's
+  # ci/github-actions) has a base other than main, and a branches filter on
+  # pull_request matches against that base -- restricting to [main] would
+  # silently give stacked PRs zero CI signal.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
