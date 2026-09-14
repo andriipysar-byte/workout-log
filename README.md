@@ -1,5 +1,7 @@
 # WorkoutLog2
 
+[![CI](https://github.com/andriipysar-byte/workout-log/actions/workflows/ci.yml/badge.svg)](https://github.com/andriipysar-byte/workout-log/actions/workflows/ci.yml)
+
 A personal hybrid-training system: a workout journal and an analytics engine,
 built around a **file-based, human-readable, dependency-free** data format.
 
