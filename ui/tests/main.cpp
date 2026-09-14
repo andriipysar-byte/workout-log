@@ -212,6 +212,10 @@ int main(int argc, char** argv) {
                 std::cout << "  FAIL " << scenario.name << ": " << diff_bytes << "/" << golden.rgb.size()
                           << " byte(s) differ from " << golden_path.string()
                           << " (rerun with --update-golden if this is an intended change)\n";
+                // A same-machine rerun can't reproduce a mismatch seen only on another
+                // box (font/renderer/CPU differences); write out what this run actually
+                // produced so it can be pulled off CI and compared or promoted directly.
+                write_ppm(golden_dir / (scenario.name + ".actual.ppm"), captured);
                 failures++;
             } else {
                 std::cout << "  ok   " << scenario.name << "\n";

@@ -87,6 +87,17 @@ jobs:
       - name: ctest
         run: ctest --test-dir build --output-on-failure
 
+      # A mismatch here reflects this runner's own render output, which a local
+      # rerun elsewhere can't reproduce -- upload it so it can be pulled down and
+      # compared against (or promoted to replace) the committed golden.
+      - name: Upload actual renders on mismatch
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-snapshot-actual
+          path: ui/tests/golden/*.actual.ppm
+          if-no-files-found: ignore
+
   # Informational: .clang-tidy findings do not fail the `tidy` target itself
   # (see misc/cmake/Tidy.cmake), so this job surfaces new diagnostics in the
   # log without gating the PR. AGENTS.md §4.2 still requires a clean run

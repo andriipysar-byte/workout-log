@@ -69,3 +69,6 @@ build
 builds/
 build-ui/
 .worktrees/
+
+# wl_ui_snapshot's diagnostic dump of what it actually rendered on mismatch
+ui/tests/golden/*.actual.ppm
