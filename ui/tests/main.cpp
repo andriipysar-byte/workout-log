@@ -34,6 +34,7 @@
 // screen's own code needs.
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <cfloat>
 #include <cstddef>
 #include <filesystem>
@@ -107,9 +108,20 @@ Image read_ppm(const std::filesystem::path& path) {
     return img;
 }
 
+// A screen-space rectangle [x0,x1) x [y0,y1) excluded from the byte comparison --
+// for content that's real, understood, and *stays* machine-dependent no matter how
+// deterministic the rest of the harness is (see uses below), not a loophole for
+// unexamined flakiness. Confirmed identical across two independent CI job runs on
+// the same commit before being carved out; nothing here masks actual randomness.
+struct Rect {
+    int x0, y0, x1, y1;
+    bool contains(int x, int y) const { return x >= x0 && x < x1 && y >= y0 && y < y1; }
+};
+
 struct Scenario {
     std::string name;
     std::function<void(AppModel&, root_view::State&)> setup;
+    std::vector<Rect> ignore_rects = {};
 };
 
 // Scenarios share one AppModel across the run (one repo-root resolution, one
@@ -120,13 +132,27 @@ struct Scenario {
 // themselves, so don't reorder this list without regenerating them.
 std::vector<Scenario> scenarios() {
     return {
-        {"list_empty", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::list; }},
+        // No file is open, so root_view falls back to showing model.folder()'s raw
+        // absolute path in the status bar (root_view.cpp) -- necessarily different
+        // on every machine/checkout, not a rendering bug. Full window width since
+        // the path's length (and so where the text ends) varies by checkout too.
+        {"list_empty", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::list; },
+         {Rect{0, 540, 820, 560}}},
         {"list_with_session",
          [](AppModel& model, root_view::State& state) {
              state.tab = root_view::Tab::list;
              if (!model.files().empty()) model.open(model.files().front());
          }},
-        {"cycle_tab", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::cycle; }},
+        // The exercise table header's semi-transparent 1px child border
+        // (ImGuiCol_Border alpha-blended over ImGuiCol_ChildBg, cycle_view.cpp's
+        // "cycle_grid" child) anti-aliases to a barely-there tint on one machine
+        // and a clearly-blended one on another -- a sub-pixel layout difference
+        // in Dear ImGui's own draw list, upstream of anything this harness pins
+        // (SDL video/render driver, CPU features). Confirmed stable, not flaky,
+        // across repeated runs on both sides; narrowed to just the border strip
+        // so real content changes inside the table still fail this test.
+        {"cycle_tab", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::cycle; },
+         {Rect{267, 0, 820, 3}, Rect{267, 115, 820, 120}, Rect{267, 0, 272, 120}, Rect{814, 0, 820, 120}}},
     };
 }
 
@@ -214,20 +240,29 @@ int main(int argc, char** argv) {
                 std::cout << "  FAIL " << scenario.name << ": size mismatch (golden " << golden.width << "x"
                           << golden.height << ", got " << captured.width << "x" << captured.height << ")\n";
                 failures++;
-            } else if (golden.rgb != captured.rgb) {
-                std::size_t diff_bytes = 0;
-                for (std::size_t i = 0; i < golden.rgb.size(); i++)
-                    if (golden.rgb[i] != captured.rgb[i]) diff_bytes++;
-                std::cout << "  FAIL " << scenario.name << ": " << diff_bytes << "/" << golden.rgb.size()
-                          << " byte(s) differ from " << golden_path.string()
-                          << " (rerun with --update-golden if this is an intended change)\n";
-                // A same-machine rerun can't reproduce a mismatch seen only on another
-                // box (font/renderer/CPU differences); write out what this run actually
-                // produced so it can be pulled off CI and compared or promoted directly.
-                write_ppm(golden_dir / (scenario.name + ".actual.ppm"), captured);
-                failures++;
             } else {
-                std::cout << "  ok   " << scenario.name << "\n";
+                std::size_t diff_bytes = 0;
+                for (std::size_t i = 0; i < golden.rgb.size(); i++) {
+                    if (golden.rgb[i] == captured.rgb[i]) continue;
+                    const std::size_t pixel = i / 3;
+                    const int x = static_cast<int>(pixel % static_cast<std::size_t>(golden.width));
+                    const int y = static_cast<int>(pixel / static_cast<std::size_t>(golden.width));
+                    const bool ignored = std::any_of(scenario.ignore_rects.begin(), scenario.ignore_rects.end(),
+                                                      [x, y](const Rect& r) { return r.contains(x, y); });
+                    if (!ignored) diff_bytes++;
+                }
+                if (diff_bytes > 0) {
+                    std::cout << "  FAIL " << scenario.name << ": " << diff_bytes << "/" << golden.rgb.size()
+                              << " byte(s) differ from " << golden_path.string()
+                              << " (rerun with --update-golden if this is an intended change)\n";
+                    // A same-machine rerun can't reproduce a mismatch seen only on another
+                    // box (font/renderer/CPU differences); write out what this run actually
+                    // produced so it can be pulled off CI and compared or promoted directly.
+                    write_ppm(golden_dir / (scenario.name + ".actual.ppm"), captured);
+                    failures++;
+                } else {
+                    std::cout << "  ok   " << scenario.name << "\n";
+                }
             }
         }
     } catch (const std::exception& e) {
