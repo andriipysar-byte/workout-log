@@ -15,6 +15,9 @@ target_link_libraries(wl_map PRIVATE workoutlog wl_warnings)
 add_executable(wl_fmt wl_fmt/main.cpp)
 target_link_libraries(wl_fmt PRIVATE workoutlog wl_warnings)
 
+add_executable(wl_cycle wl_cycle/main.cpp)
+target_link_libraries(wl_cycle PRIVATE workoutlog wl_warnings)
+
 # The acceptance gate (see docs/05-architecture.md) as a ctest test, so the
 # CMakePresets.json sanitizer profiles (`ctest --preset gcc-asan-ubsan`, etc.) have
 # something to run it against. `COMMAND wl_verify` (a target name, not a path) is

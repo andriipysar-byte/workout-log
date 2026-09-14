@@ -369,7 +369,7 @@ nl encode(const cycle_plan::Block& b) {
     return j;
 }
 
-cycle_plan::Block decode_cycle_plan_block(const nl& j) {
+cycle_plan::Block decode_cycle_plan_block_json(const nl& j) {
     cycle_plan::Block b;
     b.type = require_enum<cycle_plan::BlockType>(j, "type", cycle_plan::block_type_from_string, "cycle_plan::Block");
     b.role = require_enum<cycle_plan::BlockRole>(j, "role", cycle_plan::block_role_from_string, "cycle_plan::Block");
@@ -403,7 +403,7 @@ nl encode(const cycle_plan::Session& s) {
     return j;
 }
 
-cycle_plan::Session decode_cycle_plan_session(const nl& j) {
+cycle_plan::Session decode_cycle_plan_session_json(const nl& j) {
     cycle_plan::Session s;
     s.cycle_day = require_as<std::string>(j, "cycle_day", "cycle_plan::Session");
     s.week = get_opt<int>(j, "week");
@@ -413,7 +413,7 @@ cycle_plan::Session decode_cycle_plan_session(const nl& j) {
     s.session_notes = get_opt<std::string>(j, "session_notes");
     const nl& blocks = require(j, "blocks", "cycle_plan::Session");
     if (!blocks.is_array()) fail("cycle_plan::Session: \"blocks\" must be an array");
-    for (const auto& bj : blocks) s.blocks.push_back(decode_cycle_plan_block(bj));
+    for (const auto& bj : blocks) s.blocks.push_back(decode_cycle_plan_block_json(bj));
     return s;
 }
 
@@ -472,7 +472,7 @@ cycle_plan::Cycle decode_cycle_plan_cycle(const nl& j) {
     c.start_date = get_opt<std::string>(j, "start_date");
     const nl& sessions = require(j, "sessions", "cycle_plan::Cycle");
     if (!sessions.is_array()) fail("cycle_plan::Cycle: \"sessions\" must be an array");
-    for (const auto& sj : sessions) c.sessions.push_back(decode_cycle_plan_session(sj));
+    for (const auto& sj : sessions) c.sessions.push_back(decode_cycle_plan_session_json(sj));
     if (auto it = j.find("skipped"); it != j.end() && !it->is_null()) {
         if (!it->is_array()) fail("cycle_plan::Cycle: \"skipped\" must be an array");
         std::vector<cycle_plan::Skip> sk;
@@ -539,12 +539,32 @@ cycle_plan::File decode_cycle_plan(const std::string& utf8_json) {
     return decode_cycle_plan_file_json(parse(utf8_json));
 }
 
+// Single-value counterparts to decode_cycle_plan/encode_cycle_plan -- what wl_cycle
+// (tools/wl_cycle/main.cpp) reads/writes for its insert-session/replace-session and
+// insert-block/replace-block subcommands, which take a Session or Block fragment
+// rather than a whole cycles.json.
+cycle_plan::Session decode_cycle_plan_session(const std::string& utf8_json) {
+    return decode_cycle_plan_session_json(parse(utf8_json));
+}
+
+cycle_plan::Block decode_cycle_plan_block(const std::string& utf8_json) {
+    return decode_cycle_plan_block_json(parse(utf8_json));
+}
+
 std::string encode_session(const Session& s) {
     return encode(s).dump(2) + "\n";
 }
 
 std::string encode_cycle_plan(const cycle_plan::File& f) {
     return encode(f).dump(2) + "\n";
+}
+
+std::string encode_cycle_plan_session(const cycle_plan::Session& s) {
+    return encode(s).dump(2) + "\n";
+}
+
+std::string encode_cycle_plan_block(const cycle_plan::Block& b) {
+    return encode(b).dump(2) + "\n";
 }
 
 std::string canonicalize(const std::string& utf8_json) {
