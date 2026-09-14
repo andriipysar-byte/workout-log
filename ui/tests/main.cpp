@@ -34,6 +34,7 @@
 // screen's own code needs.
 #include <SDL3/SDL.h>
 
+#include <cfloat>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -186,6 +187,14 @@ int main(int argc, char** argv) {
             scenario.setup(model, state);
 
             platform.begin_frame();
+            // ImGui_ImplSDL3_NewFrame() (called from begin_frame()) reads the real,
+            // physical OS mouse cursor position via SDL_GetGlobalMouseState() when
+            // the offscreen window counts as focused -- so whatever widget the
+            // *actual* mouse cursor happens to sit over on the host desktop gets
+            // rendered hovered, machine-dependent and different in every CI run.
+            // Force ImGui's own "no mouse present" convention so no widget is ever
+            // hovered/active, regardless of the host's real cursor position.
+            ImGui::GetIO().MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
             ImGui::PushFont(font);
             root_view::draw(platform, model, state, font);
             ImGui::PopFont();
