@@ -38,21 +38,26 @@ jobs:
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} -j
 
-      - name: wl_verify
-        run: ./builds/${{ matrix.preset }}/bin/wl_verify
-
-      - name: ctest
+      # `ctest --preset` (not the raw binary) is the only correct invocation for
+      # the sanitizer presets: CMakePresets.json's test-tsan/test-asan-ubsan only
+      # inject TSAN_OPTIONS/ASAN_OPTIONS through ctest, and the `setarch -R` ASLR
+      # workaround TSan needs (misc/cmake/Sanitize.cmake) is likewise wired onto
+      # the `wl_verify` ctest test only -- see AGENTS.md §4.3.
+      - name: ctest (wl_verify)
         run: ctest --preset ${{ matrix.preset }}
 
       - name: wl_fmt --check (data/ stays canonical)
         if: matrix.preset == 'gcc'
         run: ./builds/gcc/bin/wl_fmt --check data/*.json cycles.json exercises.json
 
-  # SDL3 + Dear ImGui screens, offscreen (SDL_VIDEODRIVER=offscreen, forced by
-  # the harness itself -- see ui/tests/main.cpp) so this needs no display or
-  # xvfb. Not part of the `core` matrix: WL_BUILD_UI has no preset of its own
-  # (CMakePresets.json keeps the UI opt-in), so this job configures directly,
-  # the same way CLAUDE.md's own C++ quickstart does.
+  # Builds the SDL3 + Dear ImGui screens (WL_BUILD_UI=ON) and runs whatever
+  # tests are registered against that build -- today just `wl_verify`, proving
+  # the UI build stays green. `wl_ui_snapshot` (offscreen snapshot testing,
+  # PR #21) isn't on main yet; once it lands this job picks it up automatically
+  # via ctest, no workflow change needed. Not part of the `core` matrix:
+  # WL_BUILD_UI has no preset of its own (CMakePresets.json keeps the UI
+  # opt-in), so this job configures directly, the same way CLAUDE.md's own
+  # C++ quickstart does.
   ui-snapshot:
     runs-on: ubuntu-latest
     steps:
@@ -70,7 +75,7 @@ jobs:
       - name: Build
         run: cmake --build build -j
 
-      - name: ctest (wl_verify + wl_ui_snapshot)
+      - name: ctest
         run: ctest --test-dir build --output-on-failure
 
   # Informational: .clang-tidy findings do not fail the `tidy` target itself
