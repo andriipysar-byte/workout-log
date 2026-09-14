@@ -1,0 +1,281 @@
+// Headless regression harness for the ImGui screens (issue #21): renders a fixed
+// set of scenarios offscreen (SDL_VIDEODRIVER=offscreen, forced below regardless of
+// the caller's environment) and diffs the result against a checked-in PPM golden
+// per scenario. wl_verify (core/) has nothing to say about ui/ -- this is the first
+// tool that does.
+//
+// Determinism: the harness never calls fonts::load() (which probes system font
+// files -- different machines/distros would rasterize differently). It uses
+// ImGui's compiled-in default font instead, so every glyph comes from data baked
+// into the pinned ImGui version, not the filesystem. That means Cyrillic exercise
+// names render as ImGui's fallback glyph here, not real Cyrillic text -- a known,
+// accepted tradeoff for pixel-reproducible snapshots; it is not what this harness
+// is for. Rendering goes through SDL's own software path for the "offscreen"
+// driver, not a GPU, so there is no driver/vendor variance either. If a snapshot
+// ever proves flaky across machines despite this, that is real information (an
+// actual nondeterminism bug), not a reason to loosen the comparison first.
+//
+// Usage: wl_ui_snapshot [--update-golden]
+//   --update-golden   (Re)write every scenario's golden PPM instead of comparing
+//                      against it. Review the resulting image diff before
+//                      committing ui/tests/golden/*.ppm.
+
+#include "app_model.hpp"
+#include "platform.hpp"
+#include "root_view.hpp"
+#include "theme.hpp"
+#include "workoutlog/paths.hpp"
+
+#include <imgui.h>
+
+// Direct SDL use is otherwise confined to platform.cpp (the pimpl boundary,
+// AGENTS.md 1.1.1) -- this harness is the one deliberate exception, since reading
+// back rendered pixels for comparison is inherently an SDL-level concern no
+// screen's own code needs.
+#include <SDL3/SDL.h>
+
+#include <algorithm>
+#include <cfloat>
+#include <cstddef>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace workoutlog::ui;
+
+namespace {
+
+struct Image {
+    int width = 0;
+    int height = 0;
+    std::vector<char> rgb; // width * height * 3, row-major, no padding
+};
+
+Image capture(SDL_Renderer& renderer) {
+    SDL_Surface* raw = SDL_RenderReadPixels(&renderer, nullptr);
+    if (raw == nullptr) throw std::runtime_error(std::string("SDL_RenderReadPixels failed: ") + SDL_GetError());
+    SDL_Surface* converted = SDL_ConvertSurface(raw, SDL_PIXELFORMAT_RGB24);
+    SDL_DestroySurface(raw);
+    if (converted == nullptr) throw std::runtime_error(std::string("SDL_ConvertSurface failed: ") + SDL_GetError());
+
+    Image img;
+    img.width = converted->w;
+    img.height = converted->h;
+    img.rgb.resize(static_cast<std::size_t>(img.width) * static_cast<std::size_t>(img.height) * 3);
+    const auto* pixels = static_cast<const char*>(converted->pixels);
+    for (int y = 0; y < img.height; y++) {
+        const char* row = pixels + static_cast<std::size_t>(y) * static_cast<std::size_t>(converted->pitch);
+        std::copy(row, row + static_cast<std::size_t>(img.width) * 3,
+                  img.rgb.begin() + static_cast<std::ptrdiff_t>(static_cast<std::size_t>(y) *
+                                                                  static_cast<std::size_t>(img.width) * 3));
+    }
+    SDL_DestroySurface(converted);
+    return img;
+}
+
+void write_ppm(const std::filesystem::path& path, const Image& img) {
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    if (!out) throw std::runtime_error("cannot open " + path.string() + " for writing");
+    out << "P6\n" << img.width << " " << img.height << "\n255\n";
+    out.write(img.rgb.data(), static_cast<std::streamsize>(img.rgb.size()));
+}
+
+// Untrusted-boundary input like any other file this codebase reads (AGENTS.md
+// 1.2.1) even though today only this tool ever writes one.
+Image read_ppm(const std::filesystem::path& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) throw std::runtime_error("cannot open " + path.string());
+    std::string magic;
+    int width = 0;
+    int height = 0;
+    int maxval = 0;
+    in >> magic >> width >> height >> maxval;
+    constexpr int kMaxDim = 1 << 14; // generous for a snapshot golden; blocks bad_alloc on a corrupted header
+    if (!in || magic != "P6" || width <= 0 || height <= 0 || width > kMaxDim || height > kMaxDim || maxval != 255)
+        throw std::runtime_error("malformed PPM header in " + path.string());
+    in.get(); // the single whitespace byte the P6 header ends with
+
+    Image img;
+    img.width = width;
+    img.height = height;
+    img.rgb.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 3);
+    in.read(img.rgb.data(), static_cast<std::streamsize>(img.rgb.size()));
+    if (!in) throw std::runtime_error("truncated PPM data in " + path.string());
+    return img;
+}
+
+// A screen-space rectangle [x0,x1) x [y0,y1) excluded from the byte comparison --
+// for content that's real, understood, and *stays* machine-dependent no matter how
+// deterministic the rest of the harness is (see uses below), not a loophole for
+// unexamined flakiness. Confirmed identical across two independent CI job runs on
+// the same commit before being carved out; nothing here masks actual randomness.
+struct Rect {
+    int x0, y0, x1, y1;
+    bool contains(int x, int y) const { return x >= x0 && x < x1 && y >= y0 && y < y1; }
+};
+
+struct Scenario {
+    std::string name;
+    std::function<void(AppModel&, root_view::State&)> setup;
+    std::vector<Rect> ignore_rects = {};
+};
+
+// Scenarios share one AppModel across the run (one repo-root resolution, one
+// folder listing) rather than each getting its own -- so a later scenario can see
+// state an earlier one left behind (list_with_session opens a file; cycle_tab
+// doesn't depend on that, but does run after it). That is deliberate, not
+// incidental: the fixed run order is as much a part of the golden as the screens
+// themselves, so don't reorder this list without regenerating them.
+std::vector<Scenario> scenarios() {
+    return {
+        // No file is open, so root_view falls back to showing model.folder()'s raw
+        // absolute path in the status bar (root_view.cpp) -- necessarily different
+        // on every machine/checkout, not a rendering bug. Full window width since
+        // the path's length (and so where the text ends) varies by checkout too.
+        {"list_empty", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::list; },
+         {Rect{0, 540, 820, 560}}},
+        {"list_with_session",
+         [](AppModel& model, root_view::State& state) {
+             state.tab = root_view::Tab::list;
+             if (!model.files().empty()) model.open(model.files().front());
+         }},
+        // The exercise table header's semi-transparent 1px child border
+        // (ImGuiCol_Border alpha-blended over ImGuiCol_ChildBg, cycle_view.cpp's
+        // "cycle_grid" child) anti-aliases to a barely-there tint on one machine
+        // and a clearly-blended one on another -- a sub-pixel layout difference
+        // in Dear ImGui's own draw list, upstream of anything this harness pins
+        // (SDL video/render driver, CPU features). Confirmed stable, not flaky,
+        // across repeated runs on both sides; narrowed to just the border strip
+        // so real content changes inside the table still fail this test.
+        {"cycle_tab", [](AppModel&, root_view::State& state) { state.tab = root_view::Tab::cycle; },
+         {Rect{267, 0, 820, 3}, Rect{267, 115, 820, 120}, Rect{267, 0, 272, 120}, Rect{814, 0, 820, 120}}},
+    };
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    bool update_golden = false;
+    for (int i = 1; i < argc; i++)
+        if (std::string(argv[i]) == "--update-golden") update_golden = true;
+
+    std::filesystem::path repo_root;
+    try {
+        repo_root = workoutlog::paths::resolve_repo_root();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << "\n";
+        return 1;
+    }
+    const auto golden_dir = repo_root / "ui" / "tests" / "golden";
+    std::error_code ec;
+    std::filesystem::create_directories(golden_dir, ec);
+
+    // SDL_HINT_OVERRIDE is required here: at normal priority SDL_SetHint() is a
+    // no-op whenever SDL_VIDEO_DRIVER/SDL_VIDEODRIVER is already exported in the
+    // caller's environment, which would silently defeat the offscreen rendering
+    // this harness's determinism depends on.
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+    // Platform's SDL_CreateRenderer() leaves the render driver to SDL's own
+    // auto-selection, which picks an OpenGL(ES)/EGL-backed renderer when those
+    // libraries happen to be present (a dev box with X11 dev headers) and falls
+    // back to the "software" renderer when they aren't (a minimal CI runner) --
+    // two different rasterizers that anti-alias shapes and glyphs differently.
+    // Pinning "software" here keeps the golden PPMs byte-identical regardless of
+    // what GL/EGL/X11/Wayland libraries the host happens to have installed.
+    SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, "software", SDL_HINT_OVERRIDE);
+    // Even with the software renderer pinned, SDL's blit/blend routines still
+    // dispatch on whatever SIMD extensions SDL_GetCPUFeatures() detects at
+    // runtime (SDL_blit_A.c/SDL_blit_N.c), so two machines with different CPUs
+    // reach different code paths for the same drawing calls and round pixel
+    // blending by a few ULPs differently -- the remaining source of goldens
+    // matching on one box and not another after the driver was already pinned.
+    // "-all" clears every bit SDL would otherwise detect, forcing the plain
+    // scalar C fallback everywhere.
+    SDL_SetHintWithPriority(SDL_HINT_CPU_FEATURE_MASK, "-all", SDL_HINT_OVERRIDE);
+
+    int failures = 0;
+    try {
+        Platform platform;
+        float scale = platform.display_scale();
+        if (scale <= 0.0f) scale = 1.0f; // SDL_GetWindowDisplayScale can return 0 before the first frame
+
+        ImFont* font = ImGui::GetIO().Fonts->AddFontDefault();
+        theme::apply(ImGui::GetStyle(), scale);
+
+        AppModel model;
+
+        for (const auto& scenario : scenarios()) {
+            root_view::State state;
+            scenario.setup(model, state);
+
+            platform.begin_frame();
+            // ImGui_ImplSDL3_NewFrame() (called from begin_frame()) reads the real,
+            // physical OS mouse cursor position via SDL_GetGlobalMouseState() when
+            // the offscreen window counts as focused -- so whatever widget the
+            // *actual* mouse cursor happens to sit over on the host desktop gets
+            // rendered hovered, machine-dependent and different in every CI run.
+            // Force ImGui's own "no mouse present" convention so no widget is ever
+            // hovered/active, regardless of the host's real cursor position.
+            ImGui::GetIO().MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+            ImGui::PushFont(font);
+            root_view::draw(platform, model, state, font);
+            ImGui::PopFont();
+            platform.end_frame(24, 24, 27);
+
+            const Image captured = capture(*platform.renderer());
+            const auto golden_path = golden_dir / (scenario.name + ".ppm");
+
+            if (update_golden || !std::filesystem::exists(golden_path)) {
+                write_ppm(golden_path, captured);
+                std::cout << "  wrote golden: " << golden_path.string() << "\n";
+                continue;
+            }
+
+            const Image golden = read_ppm(golden_path);
+            if (golden.width != captured.width || golden.height != captured.height) {
+                std::cout << "  FAIL " << scenario.name << ": size mismatch (golden " << golden.width << "x"
+                          << golden.height << ", got " << captured.width << "x" << captured.height << ")\n";
+                failures++;
+            } else {
+                std::size_t diff_bytes = 0;
+                for (std::size_t i = 0; i < golden.rgb.size(); i++) {
+                    if (golden.rgb[i] == captured.rgb[i]) continue;
+                    const std::size_t pixel = i / 3;
+                    const int x = static_cast<int>(pixel % static_cast<std::size_t>(golden.width));
+                    const int y = static_cast<int>(pixel / static_cast<std::size_t>(golden.width));
+                    const bool ignored = std::any_of(scenario.ignore_rects.begin(), scenario.ignore_rects.end(),
+                                                      [x, y](const Rect& r) { return r.contains(x, y); });
+                    if (!ignored) diff_bytes++;
+                }
+                if (diff_bytes > 0) {
+                    std::cout << "  FAIL " << scenario.name << ": " << diff_bytes << "/" << golden.rgb.size()
+                              << " byte(s) differ from " << golden_path.string()
+                              << " (rerun with --update-golden if this is an intended change)\n";
+                    // A same-machine rerun can't reproduce a mismatch seen only on another
+                    // box (font/renderer/CPU differences); write out what this run actually
+                    // produced so it can be pulled off CI and compared or promoted directly.
+                    write_ppm(golden_dir / (scenario.name + ".actual.ppm"), captured);
+                    failures++;
+                } else {
+                    std::cout << "  ok   " << scenario.name << "\n";
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "wl_ui_snapshot: " << e.what() << "\n";
+        return 1;
+    }
+
+    if (update_golden) {
+        std::cout << "\nGolden images updated -- review the diff and commit ui/tests/golden/*.ppm.\n";
+        return 0;
+    }
+    std::cout << (failures == 0 ? "\n\xE2\x9C\x85 ALL SNAPSHOTS MATCH"
+                                : "\n\xE2\x9D\x8C " + std::to_string(failures) + " SNAPSHOT(S) DIFFER")
+              << "\n";
+    return failures == 0 ? 0 : 1;
+}
