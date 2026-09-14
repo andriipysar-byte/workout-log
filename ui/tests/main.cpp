@@ -152,6 +152,14 @@ int main(int argc, char** argv) {
     // caller's environment, which would silently defeat the offscreen rendering
     // this harness's determinism depends on.
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+    // Platform's SDL_CreateRenderer() leaves the render driver to SDL's own
+    // auto-selection, which picks an OpenGL(ES)/EGL-backed renderer when those
+    // libraries happen to be present (a dev box with X11 dev headers) and falls
+    // back to the "software" renderer when they aren't (a minimal CI runner) --
+    // two different rasterizers that anti-alias shapes and glyphs differently.
+    // Pinning "software" here keeps the golden PPMs byte-identical regardless of
+    // what GL/EGL/X11/Wayland libraries the host happens to have installed.
+    SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, "software", SDL_HINT_OVERRIDE);
 
     int failures = 0;
     try {
