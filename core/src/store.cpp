@@ -9,8 +9,6 @@
 
 namespace workoutlog {
 
-namespace {
-
 std::string read_file(const std::filesystem::path& path) {
     std::ifstream in(path, std::ios::binary);
     if (!in) throw std::runtime_error("cannot open " + path.string());
@@ -18,8 +16,6 @@ std::string read_file(const std::filesystem::path& path) {
     ss << in.rdbuf();
     return ss.str();
 }
-
-} // namespace
 
 void write_file_atomic(const std::filesystem::path& path, const std::string& contents) {
     auto tmp = path;

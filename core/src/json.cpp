@@ -357,10 +357,10 @@ nl encode(const cycle_plan::Block& b) {
     set_if(j, "machine", b.machine);
     set_num_if(j, "duration_min", b.duration_min);
     set_if(j, "exercise", b.exercise);
-    if (b.sets_reps) j["sets_reps"] = *b.sets_reps;
-    if (b.format) j["format"] = to_string(*b.format);
-    if (b.scheme) j["scheme"] = *b.scheme;
-    if (b.exercises) {
+    if (b.sets_reps.has_value()) j["sets_reps"] = *b.sets_reps;
+    if (b.format.has_value()) j["format"] = to_string(*b.format);
+    if (b.scheme.has_value()) j["scheme"] = *b.scheme;
+    if (b.exercises.has_value()) {
         nl exs = nl::array();
         for (const auto& e : *b.exercises) exs.push_back(encode(e));
         j["exercises"] = std::move(exs);
@@ -393,7 +393,7 @@ nl encode(const cycle_plan::Session& s) {
     nl j = nl::object();
     j["cycle_day"] = s.cycle_day;
     set_if(j, "week", s.week);
-    if (s.weekday) j["weekday"] = cycle_plan::to_string(*s.weekday);
+    if (s.weekday.has_value()) j["weekday"] = cycle_plan::to_string(*s.weekday);
     j["type"] = cycle_plan::to_string(s.type);
     set_if(j, "title", s.title);
     set_if(j, "session_notes", s.session_notes);
@@ -420,7 +420,7 @@ cycle_plan::Session decode_cycle_plan_session(const nl& j) {
 nl encode(const cycle_plan::Skip& sk) {
     nl j = nl::object();
     set_if(j, "week", sk.week);
-    if (sk.weekday) j["weekday"] = cycle_plan::to_string(*sk.weekday);
+    if (sk.weekday.has_value()) j["weekday"] = cycle_plan::to_string(*sk.weekday);
     j["reason"] = sk.reason;
     return j;
 }
@@ -437,7 +437,7 @@ nl encode(const cycle_plan::Cycle& c) {
     nl j = nl::object();
     j["id"] = c.id;
     j["name"] = c.name;
-    if (c.training_days) {
+    if (c.training_days.has_value()) {
         nl days = nl::array();
         for (auto d : *c.training_days) days.push_back(cycle_plan::to_string(d));
         j["training_days"] = std::move(days);
@@ -446,7 +446,7 @@ nl encode(const cycle_plan::Cycle& c) {
     nl sessions = nl::array();
     for (const auto& s : c.sessions) sessions.push_back(encode(s));
     j["sessions"] = std::move(sessions);
-    if (c.skipped) {
+    if (c.skipped.has_value()) {
         nl sk = nl::array();
         for (const auto& s : *c.skipped) sk.push_back(encode(s));
         j["skipped"] = std::move(sk);

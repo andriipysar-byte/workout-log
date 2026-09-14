@@ -4,11 +4,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -34,14 +32,6 @@ int g_failures = 0;
 void check(bool passed, const std::string& message) {
     std::cout << (passed ? "  ok   " : "  FAIL ") << message << "\n";
     if (!passed) g_failures++;
-}
-
-std::string read_file(const std::filesystem::path& path) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) throw std::runtime_error("cannot open " + path.string());
-    std::ostringstream ss;
-    ss << in.rdbuf();
-    return ss.str();
 }
 
 std::string max_key(const std::map<std::string, double>& m) {
@@ -115,7 +105,7 @@ int main() {
 
         for (const auto& f : files) {
             try {
-                auto original = read_file(f);
+                auto original = wl::read_file(f);
                 auto s1 = wl::json::decode_session(original);
                 auto enc1 = wl::json::encode_session(s1);
                 auto s2 = wl::json::decode_session(enc1);
@@ -136,7 +126,7 @@ int main() {
     std::optional<wl::Catalogue> catalogue;
     std::cout << "Catalogue (exercises.json):\n";
     try {
-        auto cat = wl::json::decode_catalogue(read_file(wl::paths::catalogue_path(repo_root)));
+        auto cat = wl::json::decode_catalogue(wl::read_file(wl::paths::catalogue_path(repo_root)));
         catalogue = cat;
 
         check(!cat.exercises.empty(), "catalogue non-empty (" + std::to_string(cat.exercises.size()) + " exercises)");
@@ -234,7 +224,7 @@ int main() {
     std::cout << "MuscleMapSVG colorizer:\n";
     try {
         if (!catalogue) throw std::runtime_error("catalogue not loaded");
-        auto tmpl = read_file(wl::paths::muscle_map_template_path(repo_root));
+        auto tmpl = wl::read_file(wl::paths::muscle_map_template_path(repo_root));
 
         std::set<std::string> used_muscles;
         for (const auto& ex : catalogue->exercises) {
@@ -476,7 +466,7 @@ int main() {
     std::cout << "cycle_plan (cycles.json):\n";
     try {
         wl::cycle_plan::CyclePlanStore store(wl::paths::cycles_path(repo_root));
-        auto original = read_file(store.path());
+        auto original = wl::read_file(store.path());
         auto file1 = wl::json::decode_cycle_plan(original);
         auto enc1 = wl::json::encode_cycle_plan(file1);
         auto file2 = wl::json::decode_cycle_plan(enc1);

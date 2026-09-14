@@ -1,7 +1,6 @@
 #include "workoutlog/cycle_plan.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -172,13 +171,7 @@ std::vector<std::string> validate(const File& file) {
     return violations;
 }
 
-File CyclePlanStore::load() const {
-    std::ifstream in(path_, std::ios::binary);
-    if (!in) throw std::runtime_error("cannot open " + path_.string());
-    std::ostringstream ss;
-    ss << in.rdbuf();
-    return json::decode_cycle_plan(ss.str());
-}
+File CyclePlanStore::load() const { return json::decode_cycle_plan(read_file(path_)); }
 
 void CyclePlanStore::save(const File& file) const {
     auto violations = validate(file);
@@ -188,6 +181,8 @@ void CyclePlanStore::save(const File& file) const {
         for (const auto& v : violations) msg << "  - " << v << "\n";
         throw std::runtime_error(msg.str());
     }
+    std::error_code ec;
+    std::filesystem::create_directories(path_.parent_path(), ec);
     write_file_atomic(path_, json::encode_cycle_plan(file));
 }
 
