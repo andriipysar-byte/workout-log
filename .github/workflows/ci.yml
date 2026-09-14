@@ -69,8 +69,13 @@ jobs:
           path: build/_deps
           key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
 
+      # SDL3's CMake hard-fails without X11 or Wayland dev headers on Linux
+      # (SDL_PrintSummary in its macros.cmake), even though this job never
+      # creates a real window -- the harness forces SDL_VIDEODRIVER=offscreen
+      # itself. SDL_UNIX_CONSOLE_BUILD=ON is SDL's own documented way to skip
+      # that check for a headless build; ubuntu-latest has neither library.
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON -DSDL_UNIX_CONSOLE_BUILD=ON
 
       - name: Build
         run: cmake --build build -j
@@ -94,7 +99,7 @@ jobs:
           key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON -DSDL_UNIX_CONSOLE_BUILD=ON
 
       - name: clang-tidy
         run: cmake --build build --target tidy
