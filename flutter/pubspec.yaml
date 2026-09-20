@@ -1,0 +1,35 @@
+name: workout_log
+description: "Hybrid-training journal over a folder of JSON session files."
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  workout_log_core:
+    path: packages/workout_log_core
+  provider: ^6.1.2
+  # Flutter's adaptive back-button icon on Apple platforms comes from here;
+  # without it every release build warns about a missing font family.
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10
+  file_picker: ^8.1.2
+  path_provider: ^2.1.4
+  shared_preferences: ^2.3.2
+  web: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  vector_graphics_codec: ^1.1.13
+  vector_graphics_compiler: ^1.1.9
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/muscle-map.svg
+    - assets/data/

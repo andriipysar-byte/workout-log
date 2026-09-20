@@ -3,11 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-  # No `branches:` filter here (deliberately, unlike the push trigger above):
-  # a PR stacked on another open PR's branch (e.g. #29 based on #28's
-  # ci/github-actions) has a base other than main, and a branches filter on
-  # pull_request matches against that base -- restricting to [main] would
-  # silently give stacked PRs zero CI signal.
+  # No `branches:` filter (deliberately, unlike the push trigger above): a PR
+  # stacked on another open PR's branch has a base other than main, and a
+  # branches filter on pull_request matches against that base -- restricting to
+  # [main] would silently give stacked PRs zero CI signal.
   pull_request:
   workflow_dispatch:
 
@@ -19,121 +18,62 @@ permissions:
   contents: read
 
 jobs:
-  # Core + CLI tools (workoutlog, wl_verify, wl_map, wl_fmt) across every build
-  # profile AGENTS.md documents (§4.1, §4.3). WL_BUILD_UI is OFF here, so these
-  # legs never touch SDL3/ImGui/lunasvg -- fast, and proves the "no UI deps in
-  # the core" rule in CMakeLists.txt actually holds.
+  # The domain core is plain Dart with no Flutter and no dart:io (ADR-004), so
+  # it needs no Flutter SDK and no display -- which is the point: purity_test
+  # fails here if a UI or platform import ever leaks in.
   core:
-    strategy:
-      fail-fast: false
-      matrix:
-        preset: [gcc, clang, gcc-asan-ubsan, gcc-tsan]
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install clang
-        if: startsWith(matrix.preset, 'clang')
-        run: sudo apt-get update && sudo apt-get install -y clang
-
-      - name: Configure
-        run: cmake --preset ${{ matrix.preset }}
-
-      - name: Build
-        run: cmake --build --preset ${{ matrix.preset }} -j
-
-      # `ctest --preset` (not the raw binary) is the only correct invocation for
-      # the sanitizer presets: CMakePresets.json's test-tsan/test-asan-ubsan only
-      # inject TSAN_OPTIONS/ASAN_OPTIONS through ctest, and the `setarch -R` ASLR
-      # workaround TSan needs (misc/cmake/Sanitize.cmake) is likewise wired onto
-      # the `wl_verify` ctest test only -- see AGENTS.md §4.3.
-      - name: ctest (wl_verify)
-        run: ctest --preset ${{ matrix.preset }}
-
-      - name: wl_fmt --check (data/ stays canonical)
-        if: matrix.preset == 'gcc'
-        run: ./builds/gcc/bin/wl_fmt --check data/*.json cycles.json exercises.json
-
-  # Builds the SDL3 + Dear ImGui screens (WL_BUILD_UI=ON) and runs whatever
-  # tests are registered against that build -- today just `wl_verify`, proving
-  # the UI build stays green. `wl_ui_snapshot` (offscreen snapshot testing,
-  # PR #21) isn't on main yet; once it lands this job picks it up automatically
-  # via ctest, no workflow change needed. Not part of the `core` matrix:
-  # WL_BUILD_UI has no preset of its own (CMakePresets.json keeps the UI
-  # opt-in), so this job configures directly, the same way CLAUDE.md's own
-  # C++ quickstart does.
-  ui-snapshot:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache fetched dependencies (SDL3/ImGui/lunasvg/nlohmann_json)
-        uses: actions/cache@v4
-        with:
-          path: build/_deps
-          key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
-
-      # SDL3's CMake hard-fails without X11 or Wayland dev headers on Linux
-      # (SDL_PrintSummary in its macros.cmake), even though this job never
-      # creates a real window -- the harness forces SDL_VIDEODRIVER=offscreen
-      # itself. SDL_UNIX_CONSOLE_BUILD=ON is SDL's own documented way to skip
-      # that check for a headless build; ubuntu-latest has neither library.
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON -DSDL_UNIX_CONSOLE_BUILD=ON
-
-      - name: Build
-        run: cmake --build build -j
-
-      - name: ctest
-        run: ctest --test-dir build --output-on-failure
-
-      # A mismatch here reflects this runner's own render output, which a local
-      # rerun elsewhere can't reproduce -- upload it so it can be pulled down and
-      # compared against (or promoted to replace) the committed golden.
-      - name: Upload actual renders on mismatch
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-snapshot-actual
-          path: ui/tests/golden/*.actual.ppm
-          if-no-files-found: ignore
-
-  # Informational: .clang-tidy findings do not fail the `tidy` target itself
-  # (see misc/cmake/Tidy.cmake), so this job surfaces new diagnostics in the
-  # log without gating the PR. AGENTS.md §4.2 still requires a clean run
-  # before a C++ change is "done" -- this is a backstop, not a substitute.
-  tidy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache fetched dependencies (SDL3/ImGui/lunasvg/nlohmann_json)
-        uses: actions/cache@v4
-        with:
-          path: build/_deps
-          key: ubuntu-wl-deps-${{ hashFiles('cmake/Dependencies.cmake') }}
-
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DWL_BUILD_UI=ON -DSDL_UNIX_CONSOLE_BUILD=ON
-
-      - name: clang-tidy
-        run: cmake --build build --target tidy
-
-  # The Swift half (app/) is what macOS actually ships today; only a full-Xcode
-  # runner can run XCTest (CLAUDE.md notes Command Line Tools can't).
-  swift-macos:
-    runs-on: macos-latest
     defaults:
       run:
-        working-directory: app
+        working-directory: flutter/packages/workout_log_core
     steps:
       - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
 
-      - name: swift build
-        run: swift build
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
 
-      - name: swift test
-        run: swift test
+      # data/ stays canonical, so a hand-edit that the encoder would rewrite
+      # fails here rather than showing up as noise in someone's next diff.
+      - name: wl_fmt --check
+        run: dart run bin/wl_fmt.dart --check
 
-      - name: wl-verify
-        run: WORKOUTLOG_DATA=../data swift run wl-verify
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+      # The bundled copies of exercises.json/cycles.json are generated from the
+      # canonical files at the repo root; this fails if they have drifted.
+      - name: Assets in sync
+        run: dart run tool/sync_assets.dart --check
+
+  # Packaging breaks independently of the tests -- an asset missing from
+  # pubspec.yaml passes `flutter test` and fails here. Web needs no signing
+  # and no macOS runner, so it is the cheapest build that proves bundling.
+  build-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web
