@@ -52,6 +52,14 @@ jobs:
           cache: true
 
       - run: flutter pub get
+
+      # `flutter analyze` recurses into packages/workout_log_core, so that
+      # package's own dev_dependencies (package:test) must be resolved too --
+      # the app's pub get only resolves it as a path dependency, which leaves
+      # every core test file failing to find `test` and `expect`.
+      - name: Resolve the core package dev dependencies
+        working-directory: flutter/packages/workout_log_core
+        run: dart pub get
       - run: flutter analyze
       - run: flutter test
 
