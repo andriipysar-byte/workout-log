@@ -99,4 +99,55 @@ void main() {
     );
     expect(session.kind, Kind.training);
   });
+
+  group('metcon movement prescription', () {
+    test('load survives a round trip and keeps weight_kg beside it', () {
+      final block = MetconBlock(
+        format: MetconFormat.forTime,
+        scheme: [21, 15, 9],
+        exercises: [
+          MetconExercise(name: 'гирі', load: '24kg+24kg'),
+          MetconExercise(name: 'стрибки на тумбу', load: '60 cm'),
+          MetconExercise(name: 'трастери', weightKg: 42.5),
+          MetconExercise(name: 'бьорпі'),
+        ],
+      );
+
+      final reloaded = Block.fromJson(
+        jsonMap(SessionCoding.encodeJson(block.toJson())),
+      );
+      expect(reloaded, block);
+    });
+
+    test('a movement with no load and no weight has no prescription', () {
+      expect(MetconExercise(name: 'бьорпі').prescription, isNull);
+    });
+
+    test('load wins over weight_kg, and a whole weight loses its .0', () {
+      expect(
+        MetconExercise(name: 'гирі', load: '24kg+24kg', weightKg: 24)
+            .prescription,
+        '24kg+24kg',
+      );
+      expect(
+        MetconExercise(name: 'трастери', weightKg: 42).prescription,
+        '42 kg',
+      );
+      expect(
+        MetconExercise(name: 'трастери', weightKg: 42.5).prescription,
+        '42.5 kg',
+      );
+    });
+
+    test('a movement follows the workout scheme unless it overrides it', () {
+      const scheme = [21, 15, 9];
+      expect(MetconExercise(name: 'бьорпі').schemeWithin(scheme), scheme);
+      expect(
+        MetconExercise(name: 'скакалка', repsOverride: [65, 45, 30])
+            .schemeWithin(scheme),
+        [65, 45, 30],
+      );
+      expect(MetconExercise(name: 'бьорпі').schemeWithin(null), isEmpty);
+    });
+  });
 }

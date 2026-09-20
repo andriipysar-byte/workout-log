@@ -72,21 +72,47 @@ enum MetconFormat {
 }
 
 class MetconExercise with JsonEquality {
-  MetconExercise({required this.name, this.weightKg, this.repsOverride});
+  MetconExercise({
+    required this.name,
+    this.load,
+    this.weightKg,
+    this.repsOverride,
+  });
 
   factory MetconExercise.fromJson(Map<String, dynamic> json) => MetconExercise(
         name: json['name'] as String,
+        load: json['load'] as String?,
         weightKg: asDouble(json['weight_kg']),
         repsOverride: asIntList(json['reps_override']),
       );
 
   String name;
+
+  /// The prescription as written on the whiteboard — "24kg+24kg", "60 cm",
+  /// "bodyweight". Free text because a single number cannot hold a pair of
+  /// bells or a box height; [weightKg] stays the machine-readable load that
+  /// tonnage reads.
+  String? load;
   double? weightKg;
   List<int>? repsOverride;
+
+  /// What the WOD table prints in parentheses after the name.
+  String? get prescription {
+    if (load != null) return load;
+    final kg = weightKg;
+    if (kg == null) return null;
+    return '${kg == kg.roundToDouble() ? kg.toInt() : kg} kg';
+  }
+
+  /// The reps this movement actually does per round: its own override when it
+  /// does not follow the workout's scheme.
+  List<int> schemeWithin(List<int>? blockScheme) =>
+      repsOverride ?? blockScheme ?? const [];
 
   @override
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{'name': name};
+    put(json, 'load', load);
     put(json, 'weight_kg', weightKg);
     put(json, 'reps_override', repsOverride);
     return json;

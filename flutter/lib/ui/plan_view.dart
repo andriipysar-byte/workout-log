@@ -5,6 +5,7 @@ import 'package:workout_log_core/workout_log_core.dart';
 import '../app_model.dart';
 import 'exercise_picker.dart';
 import 'muscle_map.dart';
+import 'metcon_table.dart';
 import 'muscle_group_legend.dart';
 import 'plan_dialogs.dart';
 import 'theme.dart';
@@ -170,39 +171,172 @@ class _EmptyPlan extends StatelessWidget {
       );
 }
 
-class _CycleDetail extends StatelessWidget {
+/// Workouts run left-to-right, one column each, the way a cycle reads on paper.
+const _workoutColumnWidth = 380.0;
+const _addColumnWidth = 200.0;
+const _totalColumnWidth = 300.0;
+
+/// Below this the pinned total would leave no room for a whole workout column,
+/// so it stops being pinned and simply leads the row.
+const _pinTotalBreakpoint = 760.0;
+
+class _CycleDetail extends StatefulWidget {
   const _CycleDetail({required this.cycle});
+
+  final Cycle cycle;
+
+  @override
+  State<_CycleDetail> createState() => _CycleDetailState();
+}
+
+class _CycleDetailState extends State<_CycleDetail> {
+  final _columns = ScrollController();
+
+  @override
+  void dispose() {
+    _columns.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cycle = widget.cycle;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: _CycleSummary(cycle: cycle),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final pinned = constraints.maxWidth >= _pinTotalBreakpoint;
+              final workouts = _workoutRow(cycle, leadWithTotal: !pinned);
+              if (!pinned) return workouts;
+              return Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 0, 16),
+                    child: _CycleTotalColumn(cycle: cycle),
+                  ),
+                  Expanded(child: workouts),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _workoutRow(Cycle cycle, {required bool leadWithTotal}) =>
+      // Always-visible thumb: a horizontal list gives no other hint that there
+      // are more workouts past the right edge.
+      Scrollbar(
+        controller: _columns,
+        thumbVisibility: true,
+        child: ListView(
+          controller: _columns,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          children: [
+            if (leadWithTotal) _CycleTotalColumn(cycle: cycle),
+            for (var i = 0; i < cycle.sessions.length; i++)
+              WorkoutCard(
+                key: ObjectKey(cycle.sessions[i]),
+                cycle: cycle,
+                workout: cycle.sessions[i],
+                index: i,
+              ),
+            _AddWorkoutColumn(cycle: cycle),
+          ],
+        ),
+      );
+}
+
+/// The whole cycle's activation, beside the per-day maps it is the sum of.
+class _CycleTotalColumn extends StatelessWidget {
+  const _CycleTotalColumn({required this.cycle});
 
   final Cycle cycle;
 
   @override
   Widget build(BuildContext context) {
     final model = context.watch<AppModel>();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      children: [
-        _CycleSummary(cycle: cycle),
-        const SizedBox(height: 8),
-        for (var i = 0; i < cycle.sessions.length; i++)
-          WorkoutCard(
-            key: ObjectKey(cycle.sessions[i]),
-            cycle: cycle,
-            workout: cycle.sessions[i],
-            index: i,
-          ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
-            onPressed:
-                model.canEditPlan ? () => model.addWorkout(cycle) : null,
-            icon: const Icon(Icons.add),
-            label: Text(
-              'Add ${CycleTemplates.nextDay(cycle.sessions.map((s) => s.cycleDay)).code}',
-            ),
+    final svg = model.planCycleMapSVG(cycle);
+    return SizedBox(
+      width: _totalColumnWidth,
+      child: Card(
+        elevation: 0,
+        color: cardSurface(context),
+        margin: const EdgeInsets.only(right: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.fitness_center, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Cycle total',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${cycle.sessions.length} workouts · by set count',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const Divider(height: 16),
+              Expanded(
+                child: switch (svg) {
+                  final String map => MuscleMap(
+                      svg: map,
+                      height: null,
+                      alignment: Alignment.topCenter,
+                    ),
+                  null => const MuscleMapUnavailable(
+                      'No exercises chosen yet — nothing to map.',
+                    ),
+                },
+              ),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _AddWorkoutColumn extends StatelessWidget {
+  const _AddWorkoutColumn({required this.cycle});
+
+  final Cycle cycle;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<AppModel>();
+    final next =
+        CycleTemplates.nextDay(cycle.sessions.map((s) => s.cycleDay)).code;
+    return SizedBox(
+      width: _addColumnWidth,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: FilledButton.icon(
+            onPressed: model.canEditPlan ? () => model.addWorkout(cycle) : null,
+            icon: const Icon(Icons.add),
+            label: Text('Add $next'),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -271,56 +405,66 @@ class _WorkoutCardState extends State<WorkoutCard> {
     final date = model.plannedDate(widget.cycle, widget.index);
     final group = model.planDominantGroup(widget.workout);
 
-    return Card(
-      elevation: 0,
-      color: cardSurface(context),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _header(context, model, day, date, group),
-            if (_showMap) ...[
-              const SizedBox(height: 8),
-              switch (model.planMapSVG(widget.workout)) {
-                final String svg => Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(width: 320, child: MuscleMap(svg: svg, height: 230)),
-                  ),
-                null => const MuscleMapUnavailable(
-                    'No exercises chosen yet — nothing to map.',
-                  ),
-              },
+    return SizedBox(
+      width: _workoutColumnWidth,
+      child: Card(
+        elevation: 0,
+        color: cardSurface(context),
+        margin: const EdgeInsets.only(right: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _header(context, model, day, date, group),
+              const Divider(height: 16),
+              // A column is height-bounded by the row, so a long block list
+              // scrolls inside its own card rather than pushing the row taller.
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    if (_showMap) ...[
+                      switch (model.planMapSVG(widget.workout)) {
+                        final String svg => MuscleMap(svg: svg, height: 230),
+                        null => const MuscleMapUnavailable(
+                            'No exercises chosen yet — nothing to map.',
+                          ),
+                      },
+                      const SizedBox(height: 8),
+                    ],
+                    for (final block in widget.workout.blocks)
+                      _BlockRow(
+                        key: ObjectKey(block),
+                        block: block,
+                        onChanged: model.cycleEdited,
+                        onRemove: () {
+                          widget.workout.blocks.remove(block);
+                          model.cycleEdited();
+                        },
+                        enabled: model.canEditPlan,
+                      ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: model.canEditPlan
+                            ? () async {
+                                final type = await showBlockTypeDialog(context);
+                                if (type == null) return;
+                                widget.workout.blocks
+                                    .add(BlockTemplate(type: type));
+                                model.cycleEdited();
+                              }
+                            : null,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add block'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-            const SizedBox(height: 8),
-            for (final block in widget.workout.blocks)
-              _BlockRow(
-                key: ObjectKey(block),
-                block: block,
-                onChanged: model.cycleEdited,
-                onRemove: () {
-                  widget.workout.blocks.remove(block);
-                  model.cycleEdited();
-                },
-                enabled: model.canEditPlan,
-              ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: model.canEditPlan
-                    ? () async {
-                        final type = await showBlockTypeDialog(context);
-                        if (type == null) return;
-                        widget.workout.blocks.add(BlockTemplate(type: type));
-                        model.cycleEdited();
-                      }
-                    : null,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add block'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -375,48 +519,65 @@ class _WorkoutCardState extends State<WorkoutCard> {
             icon: Icon(_showMap ? Icons.visibility : Icons.visibility_off),
             onPressed: () => setState(() => _showMap = !_showMap),
           ),
-          if (model.canEditPlan) ...[
-            IconButton(
-              tooltip: 'Move up',
-              icon: const Icon(Icons.arrow_upward),
-              onPressed: widget.index == 0
-                  ? null
-                  : () => model.moveWorkout(
-                      widget.cycle, widget.index, widget.index - 1),
-            ),
-            IconButton(
-              tooltip: 'Move down',
-              icon: const Icon(Icons.arrow_downward),
-              onPressed: widget.index == widget.cycle.sessions.length - 1
-                  ? null
-                  : () => model.moveWorkout(
-                      widget.cycle, widget.index, widget.index + 1),
-            ),
-            IconButton(
-              tooltip: 'Rename workout',
-              icon: const Icon(Icons.tag),
-              onPressed: () => showRetitleDialog(
-                context,
-                model,
-                widget.cycle,
-                widget.workout,
-              ),
-            ),
-            IconButton(
-              tooltip: 'Remove workout',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                final ok = await confirmRemoveWorkout(
-                  context,
-                  widget.workout.cycleDay,
-                );
-                if (ok) model.removeWorkout(widget.cycle, widget.workout);
-              },
-            ),
-          ],
+          // Four separate icon buttons do not fit a column this narrow, so the
+          // rarer actions collapse into a menu.
+          if (model.canEditPlan) _actions(context, model),
         ],
       );
+
+  Widget _actions(BuildContext context, AppModel model) =>
+      PopupMenuButton<_WorkoutAction>(
+        tooltip: 'Workout actions',
+        icon: const Icon(Icons.more_vert),
+        onSelected: (action) => _run(action, context, model),
+        itemBuilder: (context) => [
+          _item(_WorkoutAction.moveLeft, Icons.arrow_back, 'Move left',
+              enabled: widget.index > 0),
+          _item(_WorkoutAction.moveRight, Icons.arrow_forward, 'Move right',
+              enabled: widget.index < widget.cycle.sessions.length - 1),
+          _item(_WorkoutAction.rename, Icons.tag, 'Rename workout'),
+          _item(_WorkoutAction.remove, Icons.delete_outline, 'Remove workout'),
+        ],
+      );
+
+  PopupMenuItem<_WorkoutAction> _item(
+    _WorkoutAction action,
+    IconData icon,
+    String label, {
+    bool enabled = true,
+  }) =>
+      PopupMenuItem(
+        value: action,
+        enabled: enabled,
+        child: Row(
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 10),
+            Text(label),
+          ],
+        ),
+      );
+
+  Future<void> _run(
+    _WorkoutAction action,
+    BuildContext context,
+    AppModel model,
+  ) async {
+    switch (action) {
+      case _WorkoutAction.moveLeft:
+        model.moveWorkout(widget.cycle, widget.index, widget.index - 1);
+      case _WorkoutAction.moveRight:
+        model.moveWorkout(widget.cycle, widget.index, widget.index + 1);
+      case _WorkoutAction.rename:
+        await showRetitleDialog(context, model, widget.cycle, widget.workout);
+      case _WorkoutAction.remove:
+        final ok = await confirmRemoveWorkout(context, widget.workout.cycleDay);
+        if (ok) model.removeWorkout(widget.cycle, widget.workout);
+    }
+  }
 }
+
+enum _WorkoutAction { moveLeft, moveRight, rename, remove }
 
 class _BlockRow extends StatelessWidget {
   const _BlockRow({
@@ -448,17 +609,17 @@ class _BlockRow extends StatelessWidget {
           if (block.setsReps.isNotEmpty) block.setsReps.join('+'),
         ].join(' · '),
       'cardio' => '${block.durationMin?.toInt() ?? '—'} min',
-      'metcon' => [
-          block.format?.wire ?? 'format —',
-          if (block.scheme != null) block.scheme!.join('-'),
-          ...block.exercises.map((e) => e.name),
-        ].join(' · '),
+      'metcon' => '',
       _ => block.role ?? '',
     };
 
     final unresolved = block.type == 'strength' &&
         block.exercise != null &&
         model.catalogue?.resolve(block.exercise!) == null;
+
+    // A metcon is a table of movements, not a one-line summary, so it does not
+    // fit a ListTile subtitle.
+    if (block.type == 'metcon') return _metcon(context);
 
     return ListTile(
       dense: true,
@@ -497,41 +658,89 @@ class _BlockRow extends StatelessWidget {
           ],
         ],
       ),
-      subtitle: subtitle.isEmpty ? null : Text(subtitle, maxLines: 1),
+      subtitle: subtitle.isEmpty
+          ? null
+          : Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
       trailing: enabled
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (block.type == 'strength')
-                  IconButton(
-                    tooltip: 'Choose exercise',
-                    icon: const Icon(Icons.search, size: 18),
-                    onPressed: () async {
-                      final chosen = await pickExercise(
-                        context,
-                        current: block.exercise,
-                      );
-                      if (chosen == null) return;
-                      block.exercise = chosen;
-                      onChanged();
-                    },
-                  ),
-                IconButton(
-                  tooltip: 'Edit block',
-                  icon: const Icon(Icons.tune, size: 18),
-                  onPressed: () async {
-                    await showBlockDialog(context, block);
-                    onChanged();
-                  },
-                ),
-                IconButton(
-                  tooltip: 'Remove block',
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: onRemove,
-                ),
-              ],
-            )
+          ? Row(mainAxisSize: MainAxisSize.min, children: _controls(context))
           : null,
     );
   }
+
+  Widget _metcon(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(_icon, size: 18),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('metcon')),
+                if (enabled) ..._controls(context),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 2),
+              child: MetconTable(
+                format: block.format,
+                scheme: block.scheme,
+                exercises: block.exercises,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  List<Widget> _controls(BuildContext context) => [
+        if (block.type == 'strength')
+          _CompactIcon(
+            tooltip: 'Choose exercise',
+            icon: Icons.search,
+            onPressed: () async {
+              final chosen = await pickExercise(
+                context,
+                current: block.exercise,
+              );
+              if (chosen == null) return;
+              block.exercise = chosen;
+              onChanged();
+            },
+          ),
+        _CompactIcon(
+          tooltip: 'Edit block',
+          icon: Icons.tune,
+          onPressed: () async {
+            await showBlockDialog(context, block);
+            onChanged();
+          },
+        ),
+        _CompactIcon(
+          tooltip: 'Remove block',
+          icon: Icons.close,
+          onPressed: onRemove,
+        ),
+      ];
+}
+
+class _CompactIcon extends StatelessWidget {
+  const _CompactIcon({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        tooltip: tooltip,
+        icon: Icon(icon, size: 18),
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+      );
 }

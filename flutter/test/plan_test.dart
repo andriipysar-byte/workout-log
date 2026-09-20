@@ -78,6 +78,35 @@ void main() {
     expect(model.planDominantGroup(cycle.sessions.first), isNotNull);
   });
 
+  testWidgets('the cycle total map is the sum of its days', (tester) async {
+    final model = await planModel(tester);
+    final cycle = model.cycles.single;
+    final total = model.planCycleMapSVG(cycle);
+    expect(total, isNotNull);
+
+    // Every day's muscles are in the total, so the total can never leave more
+    // of the figure unworked than a single day does.
+    for (final workout in cycle.sessions) {
+      expect(
+        unworkedCount(total!),
+        lessThanOrEqualTo(unworkedCount(model.planMapSVG(workout)!)),
+        reason: workout.cycleDay,
+      );
+    }
+
+    // A sum, not a copy of the first day.
+    expect(total, isNot(model.planMapSVG(cycle.sessions.first)));
+  });
+
+  testWidgets('a cycle with no exercises chosen has no total map',
+      (tester) async {
+    final model = await planModel(tester);
+    final empty = model.cloneCycle(model.cycles.single,
+        id: 'blank', name: 'Blank')
+      ..sessions.clear();
+    expect(model.planCycleMapSVG(empty), isNull);
+  });
+
   testWidgets('adding a workout continues the A1/A2 progression',
       (tester) async {
     final model = await planModel(tester);
@@ -291,3 +320,6 @@ class ChangeNotifierProviderHostForPlan extends StatelessWidget {
   @override
   Widget build(BuildContext context) => appUnder(model);
 }
+
+/// How many elements the colorizer left at the unworked neutral.
+int unworkedCount(String svg) => RegExp('fill:#e8e8e3').allMatches(svg).length;

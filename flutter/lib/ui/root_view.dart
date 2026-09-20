@@ -177,11 +177,25 @@ class _Sidebar extends StatelessWidget {
               Expanded(
                 child: SegmentedButton<SidebarTab>(
                   showSelectedIcon: false,
-                  style:
-                      const ButtonStyle(visualDensity: VisualDensity.compact),
+                  // Default segment padding wraps "Cycle" onto a second line
+                  // at the sidebar's width.
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: WidgetStatePropertyAll(
+                      EdgeInsets.symmetric(horizontal: 6),
+                    ),
+                  ),
                   segments: [
                     for (final tab in SidebarTab.values)
-                      ButtonSegment(value: tab, label: Text(tab.label)),
+                      ButtonSegment(
+                        value: tab,
+                        label: Text(
+                          tab.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                   ],
                   selected: {tab},
                   onSelectionChanged: (s) => onTabChanged(s.first),

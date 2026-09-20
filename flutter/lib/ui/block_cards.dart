@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:workout_log_core/workout_log_core.dart';
 
+import 'metcon_table.dart';
+
 import '../app_model.dart';
 import 'muscle_map.dart';
 import 'theme.dart';
@@ -260,27 +262,11 @@ class MetconCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const BlockHeader(icon: Icons.local_fire_department, title: 'Metcon'),
-        Text('format: ${block.format?.wire ?? '—'}', style: captionStyle),
-        if (block.scheme != null)
-          Text('scheme: ${block.scheme!.join('-')}', style: captionStyle),
-        for (final exercise in block.exercises)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Row(
-              children: [
-                Text('•', style: captionStyle),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(exercise.name, overflow: TextOverflow.ellipsis),
-                ),
-                if (exercise.weightKg != null) ...[
-                  const SizedBox(width: 6),
-                  Text('(${exercise.weightKg!.toInt()} kg)',
-                      style: captionStyle),
-                ],
-              ],
-            ),
-          ),
+        MetconTable(
+          format: block.format,
+          scheme: block.scheme,
+          exercises: block.exercises,
+        ),
         if (block.rounds != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
