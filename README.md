@@ -21,13 +21,16 @@ system that answers real programming questions instead of just storing rows.
 4. **The format tolerates history.** The importer must read the real notation I
    used over years, which drifted. See `docs/03-log-notation.md`.
 
-Principle 3 has now been cashed in once. The app began as SwiftUI over a Swift
-core and was rewritten in Flutter over a Dart core. The files did not change —
-`data/`, `exercises.json` and `cycles.json` were read by the new implementation
-unmodified. The core was *re-expressed* rather than reused, though: sharing it
-across toolkits would have meant a Rust core and a binding layer (ADR-005), and
-an ~800-line domain was cheaper to port than to bind. The portable asset was the
-format, exactly as ADR-001 claimed; the code was not.
+Principle 3 has now been cashed in, and the bill came with it. The app began as
+SwiftUI over a Swift core; reaching Linux and Windows added a second UI (Dear
+ImGui over SDL3) over a second domain core, in C++. That is two implementations
+of one set of rules — the exact drift ADR-004 exists to prevent, arrived at by
+honouring ADR-004's letter in each tree separately. Flutter over a Dart core
+replaces all of it, and the Swift and C++ trees were deleted rather than kept.
+
+The files never moved: `data/`, `exercises.json` and `cycles.json` were read by
+each implementation unmodified. The portable asset was the format, exactly as
+ADR-001 claimed. The code was not — it was re-expressed three times.
 
 ## Repository layout
 

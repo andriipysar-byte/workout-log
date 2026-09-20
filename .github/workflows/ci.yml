@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  # No `branches:` filter (deliberately, unlike the push trigger above): a PR
+  # stacked on another open PR's branch has a base other than main, and a
+  # branches filter on pull_request matches against that base -- restricting to
+  # [main] would silently give stacked PRs zero CI signal.
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # The domain core is plain Dart with no Flutter and no dart:io (ADR-004), so
+  # it needs no Flutter SDK and no display -- which is the point: purity_test
+  # fails here if a UI or platform import ever leaks in.
+  core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter/packages/workout_log_core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+
+      # data/ stays canonical, so a hand-edit that the encoder would rewrite
+      # fails here rather than showing up as noise in someone's next diff.
+      - name: wl_fmt --check
+        run: dart run bin/wl_fmt.dart --check
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+      # The bundled copies of exercises.json/cycles.json are generated from the
+      # canonical files at the repo root; this fails if they have drifted.
+      - name: Assets in sync
+        run: dart run tool/sync_assets.dart --check
+
+  # Packaging breaks independently of the tests -- an asset missing from
+  # pubspec.yaml passes `flutter test` and fails here. Web needs no signing
+  # and no macOS runner, so it is the cheapest build that proves bundling.
+  build-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web
