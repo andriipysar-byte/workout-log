@@ -1,8 +1,5 @@
 # WorkoutLog2 — agent guide
 
-C++ work in `core/`, `tools/`, `capi/` and `ui/` also follows [`AGENTS.md`](AGENTS.md) — the
-coding, safety and verification rules for the C++ tree. Read it before touching C++ code.
-
 ## Comments
 
 Write a comment ONLY when the code uses a trick or a solution that is not obvious
@@ -13,22 +10,29 @@ clear names over comments. When in doubt, leave it out.
 
 ## Build & verify
 
-- Command Line Tools only (no full Xcode): `swift test` / XCTest do not run here.
-  Build with `cd app && swift build`; verify with `swift run wl-verify`.
-- Run the app: `WORKOUTLOG_DATA=../data swift run WorkoutLogApp`.
-- Data files in `data/` are the source of truth (ADR-001); the core carries all
-  domain logic and the SwiftUI layer stays pure presentation (ADR-004).
+- Domain core (pure Dart, no Flutter, no `dart:io`):
+  `cd flutter/packages/workout_log_core && dart analyze && dart test`.
+- App: `cd flutter && flutter analyze && flutter test`.
+- Run it: `cd flutter && WORKOUTLOG_DATA=../data flutter run -d macos`.
+- Generate session stubs from a cycle template (replaces the old Python script):
+  `cd flutter/packages/workout_log_core && dart run bin/wl_gen_cycle.dart [--force]`.
+- Normalise session files after hand-editing them (sorted keys, no incidental
+  diffs on the next save): `dart run bin/wl_fmt.dart` from the core package,
+  or `--check` to fail without writing.
+- After editing `exercises.json` or `cycles.json` — by hand *or* through the
+  app's Plan tab, which writes them — re-sync the bundled copies:
+  `cd flutter && dart run tool/sync_assets.dart`. A test fails if they drift.
 
-### C++ core (Linux/Windows port in progress)
+Buildable and verifiable on this machine: macOS and web. Android needs an SDK that
+is not installed; Linux and Windows need those hosts. iOS builds require a
+simulator/device run that has not been exercised here — configured and analyzed,
+not proven.
 
-The domain core is being ported to C++20 under `core/` so Linux/Windows can share it
-(the Swift core above is still what macOS runs today — the two aren't wired together
-yet). No Swift toolchain is required for this half:
-
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build -j
-./build/bin/wl_verify                 # acceptance gate; must print ALL CHECKS PASSED
-./build/bin/wl_map <session.json> [set_count|rep_volume|tonnage] [out.svg]
-./build/bin/wl_fmt [--check] <path.json...>   # canonical JSON writer, data/ already reformatted
-```
+- Data files in `data/` are the source of truth (ADR-001), except in the browser,
+  which holds a working copy and imports/exports (ADR-007).
+- The core carries all domain logic and the Flutter layer stays pure presentation
+  (ADR-004); `test/purity_test.dart` enforces the boundary mechanically.
+- `cycles.json` and `exercises.json` are hand-maintained and the app writes them
+  back, so the models keep every key they do not themselves model (`extras` /
+  `presentKeys`). `reference_files_test.dart` pins this: drop a key and a save
+  would silently delete it from the user's file.
