@@ -116,8 +116,16 @@ phase most likely to stall, so the format carries portability instead.
 
 ### Amendment, 2026-09-20 — the non-Apple surface arrived, and the core went to Dart
 
-The trigger fired: the app moved to Flutter, which reaches macOS, iOS, Android,
-Linux, Windows and the web. The stated response was to extract the core to Rust.
+The trigger fired, and ADR-005's prediction was tested the hard way first. The
+non-Apple surface arrived as a Dear ImGui/SDL3 UI for Linux and Windows, and
+rather than binding the Swift core it was given a *second* domain core in C++
+(`core/`, with `wl_verify`, `wl_map`, `wl_fmt` and `wl_cycle` beside it). That
+is what ADR-005 was trying to avoid: not a binding layer, but the thing you get
+when you skip one. Two cores, one set of rules, no mechanism keeping them
+honest — `docs/ui-parity/` existed to track the drift by hand.
+
+The app then moved to Flutter, which reaches macOS, iOS, Android, Linux, Windows
+and the web from one tree. The stated response was to extract the core to Rust.
 That is not what happened, and the reasoning that produced ADR-005 is why.
 
 ADR-005's actual argument was never *"Swift specifically"* — it was that a binding
@@ -128,10 +136,12 @@ that: the entire domain was ~800 lines of pure functions and codecs with no
 dependencies. Re-expressing it in Dart took one pass and left a single language in
 the repository.
 
-**What was given up.** The Swift and Dart cores would have been two implementations
-of the same rules, drifting apart in silence — so the Swift side was deleted
-outright rather than kept as an unverified reference. The domain now lives in Dart
-only, and `data/` remains the thing that outlives both.
+**What was given up.** The Swift and C++ cores were deleted outright rather than
+kept as unverified references, along with both UIs, their CMake build, their CI
+and the parity docs that tracked the drift between them. Keeping either would
+have recreated the problem this amendment exists to record: implementations of
+the same rules drifting apart in silence. The domain now lives in Dart only, and
+`data/` remains the thing that outlives all three.
 
 **Revisit when.** A surface arrives that Flutter does not reach, or the analytics
 engine grows heavy enough that a shared native core beats a Dart one.
