@@ -77,6 +77,22 @@ Rendered as vertical lines on every chart. Progress between anchors is the unit
 of evaluation; a PR the week before a deload means something different from one
 straight after.
 
+## Where these live
+
+The engine is pure Dart in `workout_log_core`, so every surface — the app, the
+MCP server — reads the same numbers (ADR-004, ADR-008):
+
+| Metric | Class |
+|---|---|
+| Tonnage, rep bands, top set vs back-off, density, metcon splits | `SessionMetrics` |
+| Best set per (variant, rep band), estimated 1RM, back-off volume | `ExerciseProgress` |
+| Band distribution, pattern frequency, combined load, principle alerts | `TrainingReport` |
+| Muscle scores per session or cycle | `MuscleActivation` |
+| Schema and meaning checks over a session | `SessionValidator` |
+
+Still unbuilt: postponed/skipped sessions (nothing records them yet), and the
+deload/retest anchors as chart furniture rather than as a report field.
+
 ## Explicit non-goals
 
 - No "readiness score", no HRV-style single number, no gamification.

@@ -42,6 +42,7 @@ cycles.json               reusable cycle definitions (session templates)
 docs/                     design docs and decisions
 flutter/                  the app — Flutter, all six targets
 flutter/packages/workout_log_core/   the domain core — pure Dart, no Flutter
+mcp/                      an MCP server over the same core
 ```
 
 ## Documents
@@ -73,6 +74,20 @@ cd packages/workout_log_core && dart test         # the domain suite
 - **Plan** — what is *going* to happen: create, clone and edit cycles in
   `cycles.json`, add workouts following the A1/A2 convention, pick exercises
   from the catalogue or add new ones, and see each planned day's muscle map.
+
+## Talking to it
+
+`mcp/` serves the log over MCP, so an assistant can enter a session, fill a slot
+from the paper notation, and ask the archive the questions in
+`docs/04-analytics.md` — rep-band distribution, pattern frequency, top set
+against back-off volume, density, metcon splits. It is a surface over
+`workout_log_core`, not a second implementation of it (ADR-008); it writes the
+same canonical JSON the app writes, and refuses anything that would not parse
+back. The repo ships a `.mcp.json`, so a client started here picks it up:
+
+```
+cd mcp && dart pub get && dart test
+```
 
 ## Current phase
 

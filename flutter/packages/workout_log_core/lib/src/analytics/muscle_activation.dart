@@ -124,11 +124,7 @@ class MuscleActivation {
     };
   }
 
-  int _reps(WorkSet set) =>
-      set.reps ??
-      set.totalReps ??
-      set.cluster?.fold<int>(0, (a, b) => a + b) ??
-      0;
+  int _reps(WorkSet set) => set.recordedReps ?? 0;
 
   Map<String, double> _normalize(Map<String, double> raw) {
     if (raw.isEmpty) return raw;

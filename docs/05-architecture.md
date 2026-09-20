@@ -5,11 +5,13 @@
 One domain core, several surfaces:
 
 ```
-   macOS   Linux   Windows   iOS   Android   Web
-      └───────┴────────┴──────┴───────┴───────┘
-                         │
-              Flutter UI (pure presentation)
-                         │
+   macOS   Linux   Windows   iOS   Android   Web        an MCP client
+      └───────┴────────┴──────┴───────┴───────┘                  │
+                         │                              workout_log_mcp
+              Flutter UI (pure presentation)              (tools over stdio)
+                         │                                       │
+                         └───────────────┬───────────────────────┘
+                                         │
       workout_log_core — analytics, parsing, validation
                     (pure Dart: no Flutter, no dart:io)
                          │
@@ -183,3 +185,42 @@ learns which one it is talking to, which is also what keeps `dart:io` out of it
 unless the user exports. That is stated in the UI rather than hidden: the status
 bar says *working copy*. The alternative — silently persisting to IndexedDB and
 letting a browser cache eviction look like data loss — is worse.
+
+---
+
+## ADR-008 — The MCP server is a surface, not a second core
+
+**Decision.** `mcp/` speaks MCP over stdio and calls `workout_log_core` for
+everything. Argument parsing, the session folder (`dart:io`) and JSON formatting
+live there; no domain rule does.
+
+**Why.** This is ADR-004 with a language model as the UI, and the amendment to
+ADR-005 is the reason to state it again rather than assume it. The cheap version
+of this server is a script that opens the JSON files and computes tonnage itself
+— and that is a second implementation of the rep-band rule, the cluster sum and
+the notation grammar, drifting from the app's in silence. The expensive part of
+the Swift/C++ episode was never the code, it was having two of them.
+
+**Consequence.** Metrics that did not exist yet went into the core rather than
+into the server: `SessionMetrics`, `ExerciseProgress`, `TrainingReport` and
+`SessionValidator` are pure Dart beside `MuscleActivation`, so the app can put
+them on screen without anything moving. The server's own test suite exercises
+the protocol and the file effects, not the arithmetic — that is tested where it
+lives.
+
+**Trade-off accepted.** `DirectoryStorage` is written twice, once in the Flutter
+app and once here, because the core may not have `dart:io` and neither surface
+may depend on the other. It is thirty lines of read/write/rename with no domain
+rule in it; a third package to share it would cost more than it saves.
+
+**Writes are guarded, not blocked.** A tool refuses a session that would not
+parse back and reports warnings beside the ones it accepts, because a
+half-written plan is a normal state of a file (ADR-006) and a model that cannot
+save an unfinished session will invent values to finish it. Deleting takes an
+explicit confirmation: the folder is the only copy (ADR-001).
+
+**Consequence for the reference files.** Editing `exercises.json` through the
+server refreshes the bundled copy under `flutter/assets/data/` in the same
+write, which is what `tool/sync_assets.dart` does by hand. Without it the first
+catalogue edit from a conversation would leave the asset-sync test failing with
+no visible cause.
