@@ -10,6 +10,11 @@ clear names over comments. When in doubt, leave it out.
 
 ## Build & verify
 
+- The three packages — `flutter`, `flutter/packages/workout_log_core` and `mcp` —
+  are one pub workspace rooted at the repo root, so `flutter pub get` from any of
+  them resolves all three against the single `pubspec.lock` at the root. That one
+  resolution includes the app's `sdk: flutter` dependency, which is why even the
+  two pure-Dart packages need the Flutter SDK to `pub get`.
 - Domain core (pure Dart, no Flutter, no `dart:io`):
   `cd flutter/packages/workout_log_core && dart analyze && dart test`.
 - App: `cd flutter && flutter analyze && flutter test`.
@@ -27,10 +32,12 @@ clear names over comments. When in doubt, leave it out.
   app's Plan tab, which writes them — re-sync the bundled copies:
   `cd flutter && dart run tool/sync_assets.dart`. A test fails if they drift.
 
-Buildable and verifiable on this machine: macOS and web. Android needs an SDK that
-is not installed; Linux and Windows need those hosts. iOS builds require a
-simulator/device run that has not been exercised here — configured and analyzed,
-not proven.
+Buildable and verifiable on this machine: macOS and web. The tree carries runners
+for macOS, iOS, Linux and web only — Android and Windows were generated scaffolding
+that nothing ever touched, and `cd flutter && flutter create --platforms=android .`
+brings either back byte-identical the day it is wanted. Linux needs that host to
+build on. iOS builds require a simulator/device run that has not been exercised
+here — configured and analyzed, not proven.
 
 - Data files in `data/` are the source of truth (ADR-001), except in the browser,
   which holds a working copy and imports/exports (ADR-007).

@@ -64,15 +64,19 @@ against.
 
 ## Phase 3 — The platforms that are configured but unproven
 
-One Flutter codebase already targets all six. Three are real today; three are
-scaffolded and analyzed but have never been built or run.
+One Flutter codebase reaches all six, but the tree only carries runners for four:
+macOS, iOS, Linux and web. Two are real today; the other two are scaffolded and
+analyzed but have never been built or run.
 
 - [x] macOS — builds and runs against the real `data/`
 - [x] Web — builds; holds a working copy and imports/exports (ADR-007)
 - [ ] iOS — capture at the gym: rest timer, metcon round splits, heart rate,
       and previous performance on this lift visible while lifting
-- [ ] Android — same, once an SDK is installed
-- [ ] Linux and Windows — need those hosts to build on
+- [ ] Android — same, once an SDK is installed; its runner was dropped as
+      untouched scaffolding and comes back with
+      `flutter create --platforms=android .`
+- [ ] Linux and Windows — need those hosts to build on, and Windows needs its
+      runner regenerated the same way
 - [ ] Portable folder sync to replace iCloud Drive (ADR-003 makes this a
       configuration choice, not a code change)
 
