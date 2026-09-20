@@ -13,6 +13,10 @@ clear names over comments. When in doubt, leave it out.
 - Domain core (pure Dart, no Flutter, no `dart:io`):
   `cd flutter/packages/workout_log_core && dart analyze && dart test`.
 - App: `cd flutter && flutter analyze && flutter test`.
+- MCP server (pure Dart over the core, with `dart:io`):
+  `cd mcp && dart analyze && dart test`. Run it by hand with
+  `dart run bin/workout_log_mcp.dart --repo ..`; it speaks MCP on stdio, so
+  nothing in it may ever write to stdout.
 - Run it: `cd flutter && WORKOUTLOG_DATA=../data flutter run -d macos`.
 - Generate session stubs from a cycle template (replaces the old Python script):
   `cd flutter/packages/workout_log_core && dart run bin/wl_gen_cycle.dart [--force]`.

@@ -60,6 +60,18 @@ class WorkSet with JsonEquality {
     return json;
   }
 
+  /// The reps this set actually recorded, however they were written down: a
+  /// plain count, a cluster chain, or the total a cluster was summed to. Null
+  /// when the set measures something else (a hold) or nothing yet (a plan).
+  int? get recordedReps =>
+      reps ?? totalReps ?? cluster?.fold<int>(0, (a, b) => a + b);
+
+  /// The band this set belongs to (P6): what the log says when it says, else
+  /// what its reps imply.
+  RepBand? get band => repBand ?? RepBand.forReps(recordedReps);
+
+  double get tonnageKg => (recordedReps ?? 0) * (weightKg ?? 0);
+
   WorkSet copy() => WorkSet.fromJson(toJson());
 }
 
@@ -70,6 +82,15 @@ enum RepBand {
 
   static RepBand? fromJson(String? value) =>
       value == null ? null : RepBand.values.byName(value);
+
+  /// The band a rep count falls in (P6). Only a recorded set has a band, so a
+  /// set with no reps at all — a hold, or a slot not filled in yet — has none.
+  static RepBand? forReps(int? reps) => switch (reps) {
+        null || <= 0 => null,
+        <= 3 => RepBand.heavy,
+        <= 6 => RepBand.base,
+        _ => RepBand.volume,
+      };
 }
 
 enum BarSpeed {

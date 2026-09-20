@@ -1,0 +1,18 @@
+name: workout_log_mcp
+description: MCP server over the workout log — create, edit and analyse sessions.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  dart_mcp: ^0.5.2
+  workout_log_core:
+    path: ../flutter/packages/workout_log_core
+
+dev_dependencies:
+  lints: ^6.0.0
+  # The in-memory channel pair the server tests talk over, in place of stdio.
+  stream_channel: ^2.1.4
+  test: ^1.25.0

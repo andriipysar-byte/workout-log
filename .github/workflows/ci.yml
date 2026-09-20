@@ -39,6 +39,22 @@ jobs:
       - name: wl_fmt --check
         run: dart run bin/wl_fmt.dart --check
 
+  # The MCP server is the core plus dart:io and a protocol (ADR-008), so it also
+  # needs no Flutter SDK. Its tests read the real exercises.json and cycles.json
+  # over a temporary session folder, never data/.
+  mcp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+
   app:
     runs-on: ubuntu-latest
     defaults:
