@@ -1,23 +1,17 @@
 {
-  "date": "2026-07-30",
-  "cycle_day": "C1",
-  "kind": "training",
-  "notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня.",
   "blocks": [
     {
-      "type": "cardio",
+      "duration_min": 10,
       "machine": "",
-      "duration_min": 10
+      "type": "cardio"
     },
     {
-      "type": "strength",
       "exercise": "протяжка ривкова",
+      "notes": "5 × 2, вибух; історичні дані: 90 кг (2+2)",
       "sets": [],
-      "notes": "5 × 2, вибух; історичні дані: 90 кг (2+2)"
+      "type": "strength"
     },
     {
-      "type": "metcon",
-      "format": "amrap",
       "exercises": [
         {
           "name": "гирі"
@@ -29,10 +23,11 @@
           "name": "альпініст"
         }
       ],
-      "notes": "AMRAP 15 хв; аеробний домен"
+      "format": "amrap",
+      "notes": "AMRAP 15 хв; аеробний домен",
+      "type": "metcon"
     },
     {
-      "type": "strength",
       "exercise": "підйоми на носки",
       "sets": [
         {
@@ -50,11 +45,12 @@
         {
           "reps": 6
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
-      "type": "strength",
       "exercise": "прокручування кисті з гантелею",
+      "notes": "хват",
       "sets": [
         {
           "reps": 8
@@ -69,10 +65,14 @@
           "reps": 8
         }
       ],
-      "notes": "хват"
+      "type": "strength"
     },
     {
       "type": "cooldown"
     }
-  ]
+  ],
+  "cycle_day": "C1",
+  "date": "2026-07-30",
+  "kind": "training",
+  "notes": "Меткон-день: тримати сесію ≤1.5 год (P-час) — розминка 10 хв, гіперекстензія відсутня."
 }

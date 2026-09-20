@@ -63,3 +63,22 @@ app/.build/
 
 # Generated heatmap exports
 out/
+
+# Flutter / Dart
+# The generated flutter/**/.gitignore files cover most of this; these are
+# repeated here so the repo stays clean if one of them is regenerated away.
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+**/doc/api/
+**/Flutter/ephemeral/
+**/ios/Flutter/.last_build_id
+**/Pods/
+*.iml
+
+# Symbolication / obfuscation output
+app.*.symbols
+app.*.map.json
