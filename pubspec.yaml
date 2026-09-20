@@ -1,0 +1,14 @@
+name: workout_log_workspace
+description: Workspace root — resolves the app, the domain core and the MCP server together.
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+# Members depend on `workout_log_core` by name rather than by `path:` — with the
+# app and the MCP server both pointing a path at the same member, pub fails the
+# resolution with "Duplicate name workout_log_core in generated package config".
+workspace:
+  - flutter
+  - flutter/packages/workout_log_core
+  - mcp

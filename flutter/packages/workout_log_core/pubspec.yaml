@@ -3,6 +3,8 @@ description: Domain core for WorkoutLog — models, notation parsing, storage an
 version: 1.0.0
 publish_to: none
 
+resolution: workspace
+
 environment:
   sdk: ^3.13.0
 

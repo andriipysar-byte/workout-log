@@ -18,9 +18,10 @@ permissions:
   contents: read
 
 jobs:
-  # The domain core is plain Dart with no Flutter and no dart:io (ADR-004), so
-  # it needs no Flutter SDK and no display -- which is the point: purity_test
-  # fails here if a UI or platform import ever leaks in.
+  # The domain core imports no Flutter and no dart:io (ADR-004); purity_test
+  # reads lib/ and fails here if one ever leaks in. The Flutter SDK is set up
+  # all the same: the core is a member of the repo-root pub workspace, and
+  # resolving any member resolves the app's `sdk: flutter` dependency too.
   core:
     runs-on: ubuntu-latest
     defaults:
@@ -28,9 +29,12 @@ jobs:
         working-directory: flutter/packages/workout_log_core
     steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-      - run: dart pub get
+      - run: flutter pub get
       - run: dart analyze --fatal-infos
       - run: dart test
 
@@ -39,9 +43,9 @@ jobs:
       - name: wl_fmt --check
         run: dart run bin/wl_fmt.dart --check
 
-  # The MCP server is the core plus dart:io and a protocol (ADR-008), so it also
-  # needs no Flutter SDK. Its tests read the real exercises.json and cycles.json
-  # over a temporary session folder, never data/.
+  # The MCP server is the core plus dart:io and a protocol (ADR-008). Its tests
+  # read the real exercises.json and cycles.json over a temporary session
+  # folder, never data/.
   mcp:
     runs-on: ubuntu-latest
     defaults:
@@ -49,9 +53,12 @@ jobs:
         working-directory: mcp
     steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-      - run: dart pub get
+      - run: flutter pub get
       - run: dart analyze --fatal-infos
       - run: dart test
 
@@ -68,14 +75,6 @@ jobs:
           cache: true
 
       - run: flutter pub get
-
-      # `flutter analyze` recurses into packages/workout_log_core, so that
-      # package's own dev_dependencies (package:test) must be resolved too --
-      # the app's pub get only resolves it as a path dependency, which leaves
-      # every core test file failing to find `test` and `expect`.
-      - name: Resolve the core package dev dependencies
-        working-directory: flutter/packages/workout_log_core
-        run: dart pub get
       - run: flutter analyze
       - run: flutter test
 
