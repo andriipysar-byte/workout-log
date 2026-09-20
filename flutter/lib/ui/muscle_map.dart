@@ -5,10 +5,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// SVG string, which is also what makes the map work on all six platforms —
 /// the macOS build embedded a WKWebView to do this.
 class MuscleMap extends StatelessWidget {
-  const MuscleMap({required this.svg, this.height = 280, super.key});
+  /// A null [height] lets the map fill its parent instead of a fixed box.
+  const MuscleMap({
+    required this.svg,
+    this.height = 280,
+    this.alignment = Alignment.center,
+    super.key,
+  });
 
   final String svg;
-  final double height;
+  final double? height;
+
+  /// Where the figure sits when the box is taller than its 500×640 aspect —
+  /// centred leaves a gap under the heading in a full-height column.
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -16,7 +26,7 @@ class MuscleMap extends StatelessWidget {
         // No spinner while the SVG decodes: it is fast enough that one would
         // only flicker, and an indeterminate animation means a widget test can
         // never reach a settled frame.
-        child: SvgPicture.string(svg, fit: BoxFit.contain),
+        child: SvgPicture.string(svg, fit: BoxFit.contain, alignment: alignment),
       );
 }
 

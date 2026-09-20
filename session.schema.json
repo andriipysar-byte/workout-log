@@ -99,6 +99,7 @@
             "required": ["name"],
             "properties": {
               "name": { "type": "string" },
+              "load": { "type": "string", "description": "The prescription as written on the whiteboard: \"24kg+24kg\", \"60 cm\", \"bodyweight\". Free text; weight_kg stays the machine-readable load that tonnage reads." },
               "weight_kg": { "type": "number" },
               "reps_override": {
                 "type": "array",

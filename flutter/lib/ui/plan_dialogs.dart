@@ -119,7 +119,7 @@ class _CycleDialogState extends State<_CycleDialog> {
           _ => 'New cycle',
         }),
         content: SizedBox(
-          width: 440,
+          width: 520,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,9 +334,9 @@ class _BlockDialogState extends State<_BlockDialog> {
       TextEditingController(text: widget.block.setsReps.join(', '));
   late final _scheme =
       TextEditingController(text: widget.block.scheme?.join(', ') ?? '');
-  late final _metconExercises = TextEditingController(
-    text: widget.block.exercises.map((e) => e.name).join(', '),
-  );
+  late final List<_MovementDraft> _movements = [
+    for (final exercise in widget.block.exercises) _MovementDraft(exercise),
+  ];
   late MetconFormat? _format = widget.block.format;
 
   @override
@@ -348,9 +348,11 @@ class _BlockDialogState extends State<_BlockDialog> {
       _duration,
       _setsReps,
       _scheme,
-      _metconExercises,
     ]) {
       controller.dispose();
+    }
+    for (final movement in _movements) {
+      movement.dispose();
     }
     super.dispose();
   }
@@ -382,18 +384,81 @@ class _BlockDialogState extends State<_BlockDialog> {
           ..format = _format
           ..scheme = scheme.isEmpty ? null : scheme
           ..exercises = [
-            for (final name in _metconExercises.text.split(','))
-              if (name.trim().isNotEmpty) MetconExercise(name: name.trim()),
+            for (final movement in _movements)
+              if (movement.name.text.trim().isNotEmpty) movement.toExercise(),
           ];
     }
     Navigator.pop(context);
   }
 
+  static const _repsWidth = 96.0;
+  static const _removeWidth = 36.0;
+
+  Widget _movementHeader(BuildContext context) {
+    final caption = Theme.of(context).textTheme.bodySmall;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: Text('Movement', style: caption)),
+          const SizedBox(width: 6),
+          Expanded(flex: 3, child: Text('Load', style: caption)),
+          const SizedBox(width: 6),
+          SizedBox(width: _repsWidth, child: Text('Reps', style: caption)),
+          const SizedBox(width: _removeWidth),
+        ],
+      ),
+    );
+  }
+
+  Widget _movementRow(int i) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextField(
+                controller: _movements[i].name,
+                decoration: const InputDecoration(hintText: 'трастери'),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              flex: 3,
+              child: TextField(
+                controller: _movements[i].load,
+                decoration: const InputDecoration(hintText: '24kg+24kg'),
+              ),
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: _repsWidth,
+              child: TextField(
+                controller: _movements[i].reps,
+                // Empty means "follows the workout's scheme", which is why this
+                // is blank rather than prefilled from it.
+                decoration: const InputDecoration(hintText: 'scheme'),
+              ),
+            ),
+            SizedBox(
+              width: _removeWidth,
+              child: IconButton(
+                tooltip: 'Remove movement',
+                icon: const Icon(Icons.close, size: 18),
+                padding: EdgeInsets.zero,
+                onPressed: () =>
+                    setState(() => _movements.removeAt(i).dispose()),
+              ),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) => AlertDialog(
         title: Text('Edit ${widget.block.type} block'),
         content: SizedBox(
-          width: 440,
+          width: 520,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -454,11 +519,17 @@ class _BlockDialogState extends State<_BlockDialog> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: _metconExercises,
-                    decoration: const InputDecoration(
-                      labelText: 'Exercises',
-                      hintText: 'трастери, бьорпі',
+                  _movementHeader(context),
+                  for (var i = 0; i < _movements.length; i++)
+                    _movementRow(i),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(
+                        () => _movements.add(_MovementDraft(null)),
+                      ),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add movement'),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -513,3 +584,39 @@ Future<bool> _confirm(
       ),
     ) ??
     false;
+
+
+class _MovementDraft {
+  _MovementDraft(MetconExercise? source)
+      : name = TextEditingController(text: source?.name ?? ''),
+        load = TextEditingController(text: source?.load ?? ''),
+        reps = TextEditingController(
+          text: source?.repsOverride?.join(', ') ?? '',
+        ),
+        weightKg = source?.weightKg;
+
+  final TextEditingController name;
+  final TextEditingController load;
+  final TextEditingController reps;
+
+  /// Carried through untouched: the numeric load tonnage reads, which this
+  /// dialog does not expose. Rebuilding movements from their names alone used
+  /// to drop it.
+  final double? weightKg;
+
+  MetconExercise toExercise() {
+    final override = _BlockDialogState._numbers(reps.text);
+    return MetconExercise(
+      name: name.text.trim(),
+      load: load.text.trim().isEmpty ? null : load.text.trim(),
+      weightKg: weightKg,
+      repsOverride: override.isEmpty ? null : override,
+    );
+  }
+
+  void dispose() {
+    name.dispose();
+    load.dispose();
+    reps.dispose();
+  }
+}

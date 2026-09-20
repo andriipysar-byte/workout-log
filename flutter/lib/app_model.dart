@@ -106,6 +106,20 @@ class AppModel extends ChangeNotifier {
     return MuscleMapSVG.colorize(_mapTemplate!, scores);
   }
 
+  /// Every planned workout in one map. Raw volumes sum across the cycle and
+  /// are normalized once, so a heavy day cannot drown a light one the way
+  /// averaging the already-normalized per-day maps would.
+  String? planCycleMapSVG(Cycle cycle) {
+    if (_catalogue == null || _mapTemplate == null) return null;
+    final scores = _activation.forSessions(
+      [for (final workout in cycle.sessions) CycleGenerator.preview(workout)],
+      catalogue: _catalogue!,
+      mode: WeightingMode.setCount,
+    );
+    if (scores.isEmpty) return null;
+    return MuscleMapSVG.colorize(_mapTemplate!, scores);
+  }
+
   MuscleGroup? planDominantGroup(CycleSession workout) {
     if (_catalogue == null) return null;
     return MuscleGroup.dominant(_activation.forSession(

@@ -5,6 +5,7 @@ import 'package:workout_log_core/workout_log_core.dart';
 import '../app_model.dart';
 import 'exercise_picker.dart';
 import 'muscle_map.dart';
+import 'metcon_table.dart';
 import 'muscle_group_legend.dart';
 import 'plan_dialogs.dart';
 import 'theme.dart';
@@ -173,6 +174,11 @@ class _EmptyPlan extends StatelessWidget {
 /// Workouts run left-to-right, one column each, the way a cycle reads on paper.
 const _workoutColumnWidth = 380.0;
 const _addColumnWidth = 200.0;
+const _totalColumnWidth = 300.0;
+
+/// Below this the pinned total would leave no room for a whole workout column,
+/// so it stops being pinned and simply leads the row.
+const _pinTotalBreakpoint = 760.0;
 
 class _CycleDetail extends StatefulWidget {
   const _CycleDetail({required this.cycle});
@@ -204,28 +210,106 @@ class _CycleDetailState extends State<_CycleDetail> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          // Always-visible thumb: a horizontal list gives no other hint that
-          // there are more workouts past the right edge.
-          child: Scrollbar(
-            controller: _columns,
-            thumbVisibility: true,
-            child: ListView.builder(
-              controller: _columns,
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-              itemCount: cycle.sessions.length + 1,
-              itemBuilder: (context, i) => i == cycle.sessions.length
-                  ? _AddWorkoutColumn(cycle: cycle)
-                  : WorkoutCard(
-                      key: ObjectKey(cycle.sessions[i]),
-                      cycle: cycle,
-                      workout: cycle.sessions[i],
-                      index: i,
-                    ),
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final pinned = constraints.maxWidth >= _pinTotalBreakpoint;
+              final workouts = _workoutRow(cycle, leadWithTotal: !pinned);
+              if (!pinned) return workouts;
+              return Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 0, 16),
+                    child: _CycleTotalColumn(cycle: cycle),
+                  ),
+                  Expanded(child: workouts),
+                ],
+              );
+            },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _workoutRow(Cycle cycle, {required bool leadWithTotal}) =>
+      // Always-visible thumb: a horizontal list gives no other hint that there
+      // are more workouts past the right edge.
+      Scrollbar(
+        controller: _columns,
+        thumbVisibility: true,
+        child: ListView(
+          controller: _columns,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          children: [
+            if (leadWithTotal) _CycleTotalColumn(cycle: cycle),
+            for (var i = 0; i < cycle.sessions.length; i++)
+              WorkoutCard(
+                key: ObjectKey(cycle.sessions[i]),
+                cycle: cycle,
+                workout: cycle.sessions[i],
+                index: i,
+              ),
+            _AddWorkoutColumn(cycle: cycle),
+          ],
+        ),
+      );
+}
+
+/// The whole cycle's activation, beside the per-day maps it is the sum of.
+class _CycleTotalColumn extends StatelessWidget {
+  const _CycleTotalColumn({required this.cycle});
+
+  final Cycle cycle;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<AppModel>();
+    final svg = model.planCycleMapSVG(cycle);
+    return SizedBox(
+      width: _totalColumnWidth,
+      child: Card(
+        elevation: 0,
+        color: cardSurface(context),
+        margin: const EdgeInsets.only(right: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.fitness_center, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Cycle total',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${cycle.sessions.length} workouts · by set count',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const Divider(height: 16),
+              Expanded(
+                child: switch (svg) {
+                  final String map => MuscleMap(
+                      svg: map,
+                      height: null,
+                      alignment: Alignment.topCenter,
+                    ),
+                  null => const MuscleMapUnavailable(
+                      'No exercises chosen yet — nothing to map.',
+                    ),
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -525,17 +609,17 @@ class _BlockRow extends StatelessWidget {
           if (block.setsReps.isNotEmpty) block.setsReps.join('+'),
         ].join(' · '),
       'cardio' => '${block.durationMin?.toInt() ?? '—'} min',
-      'metcon' => [
-          block.format?.wire ?? 'format —',
-          if (block.scheme != null) block.scheme!.join('-'),
-          ...block.exercises.map((e) => e.name),
-        ].join(' · '),
+      'metcon' => '',
       _ => block.role ?? '',
     };
 
     final unresolved = block.type == 'strength' &&
         block.exercise != null &&
         model.catalogue?.resolve(block.exercise!) == null;
+
+    // A metcon is a table of movements, not a one-line summary, so it does not
+    // fit a ListTile subtitle.
+    if (block.type == 'metcon') return _metcon(context);
 
     return ListTile(
       dense: true,
@@ -578,41 +662,65 @@ class _BlockRow extends StatelessWidget {
           ? null
           : Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
       trailing: enabled
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (block.type == 'strength')
-                  _CompactIcon(
-                    tooltip: 'Choose exercise',
-                    icon: Icons.search,
-                    onPressed: () async {
-                      final chosen = await pickExercise(
-                        context,
-                        current: block.exercise,
-                      );
-                      if (chosen == null) return;
-                      block.exercise = chosen;
-                      onChanged();
-                    },
-                  ),
-                _CompactIcon(
-                  tooltip: 'Edit block',
-                  icon: Icons.tune,
-                  onPressed: () async {
-                    await showBlockDialog(context, block);
-                    onChanged();
-                  },
-                ),
-                _CompactIcon(
-                  tooltip: 'Remove block',
-                  icon: Icons.close,
-                  onPressed: onRemove,
-                ),
-              ],
-            )
+          ? Row(mainAxisSize: MainAxisSize.min, children: _controls(context))
           : null,
     );
   }
+
+  Widget _metcon(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(_icon, size: 18),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('metcon')),
+                if (enabled) ..._controls(context),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 2),
+              child: MetconTable(
+                format: block.format,
+                scheme: block.scheme,
+                exercises: block.exercises,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  List<Widget> _controls(BuildContext context) => [
+        if (block.type == 'strength')
+          _CompactIcon(
+            tooltip: 'Choose exercise',
+            icon: Icons.search,
+            onPressed: () async {
+              final chosen = await pickExercise(
+                context,
+                current: block.exercise,
+              );
+              if (chosen == null) return;
+              block.exercise = chosen;
+              onChanged();
+            },
+          ),
+        _CompactIcon(
+          tooltip: 'Edit block',
+          icon: Icons.tune,
+          onPressed: () async {
+            await showBlockDialog(context, block);
+            onChanged();
+          },
+        ),
+        _CompactIcon(
+          tooltip: 'Remove block',
+          icon: Icons.close,
+          onPressed: onRemove,
+        ),
+      ];
 }
 
 class _CompactIcon extends StatelessWidget {
