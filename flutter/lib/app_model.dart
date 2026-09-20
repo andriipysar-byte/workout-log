@@ -86,27 +86,71 @@ class AppModel extends ChangeNotifier {
 
   List<Cycle> get cycles => _cycles?.cycles ?? const [];
 
+  Catalogue? get catalogue => _catalogue;
+
+  bool get canEditPlan => _folder?.references.canWrite ?? false;
+
+  /// The plan's own muscle map, one per workout day.
+  ///
+  /// Always weighted by set count: a plan carries no weights, so tonnage would
+  /// read zero for the whole day and rep volume would ignore any lift whose
+  /// reps are not decided yet.
+  String? planMapSVG(CycleSession workout) {
+    if (_catalogue == null || _mapTemplate == null) return null;
+    final scores = _activation.forSession(
+      CycleGenerator.preview(workout),
+      catalogue: _catalogue!,
+      mode: WeightingMode.setCount,
+    );
+    if (scores.isEmpty) return null;
+    return MuscleMapSVG.colorize(_mapTemplate!, scores);
+  }
+
+  MuscleGroup? planDominantGroup(CycleSession workout) {
+    if (_catalogue == null) return null;
+    return MuscleGroup.dominant(_activation.forSession(
+      CycleGenerator.preview(workout),
+      catalogue: _catalogue!,
+      mode: WeightingMode.setCount,
+    ));
+  }
+
   /// `folder` is injected by tests, which have no platform channels to resolve
   /// a real directory through.
   Future<void> start({SessionFolder? folder}) async {
     await _loadAssets();
     _folder = folder ?? await openDefaultFolder();
     _store = SessionStore(_folder!.storage);
+    await _loadReferenceFiles();
     ready = true;
     await refresh();
   }
 
   Future<void> _loadAssets() async {
     try {
-      _catalogue = SessionCoding.decodeCatalogue(
-        await rootBundle.loadString('assets/data/exercises.json'),
-      );
-      _cycles = CycleCatalogue.fromJson(
-        jsonMap(await rootBundle.loadString('assets/data/cycles.json')),
-      );
       _mapTemplate = await rootBundle.loadString('assets/muscle-map.svg');
     } catch (error) {
       status = 'Asset load failed: $error';
+    }
+  }
+
+  /// The reference files come from beside the session folder when they are
+  /// there, and from the bundle otherwise — so the desktop app edits the real
+  /// `exercises.json`, while mobile and web still start with a catalogue.
+  Future<void> _loadReferenceFiles() async {
+    Future<String> load(String name, String asset) async =>
+        await _folder!.references.read(name) ?? await rootBundle.loadString(asset);
+
+    try {
+      _catalogue = SessionCoding.decodeCatalogue(
+        await load('exercises.json', 'assets/data/exercises.json'),
+      );
+      _cycles = CycleCatalogue.fromJson(
+        jsonMap(await load('cycles.json', 'assets/data/cycles.json')),
+      );
+      _exerciseMapCache.clear();
+    } catch (error) {
+      status = 'Catalogue load failed: $error';
     }
   }
 
@@ -365,11 +409,166 @@ class AppModel extends ChangeNotifier {
     }
   }
 
+  // ---------------------------------------------------------------- planning
+
+  /// Edits happen on the in-memory catalogue and are written out by
+  /// [saveCycles]; nothing touches the file until then, so an abandoned edit
+  /// costs nothing.
+  void cycleEdited() {
+    _cycleMapSvg = null;
+    notifyListeners();
+  }
+
+  Cycle createCycle({required String id, required String name}) {
+    final cycle = Cycle(
+      id: id,
+      name: name,
+      trainingDays: const ['Tue', 'Thu', 'Sun'],
+      startDate: CycleGenerator.isoDate(DateTime.now()),
+      sessions: [],
+    );
+    _cycles = CycleCatalogue(
+      cycles: [...cycles, cycle],
+      comment: _cycles?.comment,
+    );
+    status = 'Created cycle "$name"';
+    notifyListeners();
+    return cycle;
+  }
+
+  Cycle cloneCycle(Cycle source, {required String id, required String name}) {
+    final clone = source.copy()
+      ..id = id
+      ..name = name;
+    _cycles = CycleCatalogue(
+      cycles: [...cycles, clone],
+      comment: _cycles?.comment,
+    );
+    status = 'Cloned "${source.name}" as "$name"';
+    notifyListeners();
+    return clone;
+  }
+
+  void deleteCycle(Cycle cycle) {
+    _cycles = CycleCatalogue(
+      cycles: [...cycles]..remove(cycle),
+      comment: _cycles?.comment,
+    );
+    status = 'Removed cycle "${cycle.name}"';
+    notifyListeners();
+  }
+
+  bool cycleIdTaken(String id) =>
+      cycles.any((c) => c.id.toLowerCase() == id.trim().toLowerCase());
+
+  /// Appends the next workout in the A1, A2, B1, B2 … progression, pre-filled
+  /// from its number.
+  CycleSession addWorkout(Cycle cycle, {CycleDay? day}) {
+    final next = day ?? CycleTemplates.nextDay(cycle.sessions.map((s) => s.cycleDay));
+    final workout = CycleTemplates.session(
+      next,
+      weekday: _weekdayFor(cycle, cycle.sessions.length),
+      week: cycle.sessions.length ~/ cycle.trainingDays.length + 1,
+    );
+    cycle.sessions.add(workout);
+    status = 'Added ${workout.cycleDay}';
+    notifyListeners();
+    return workout;
+  }
+
+  void removeWorkout(Cycle cycle, CycleSession workout) {
+    cycle.sessions.remove(workout);
+    _resyncWeekdays(cycle);
+    status = 'Removed ${workout.cycleDay}';
+    notifyListeners();
+  }
+
+  void moveWorkout(Cycle cycle, int from, int to) {
+    if (to < 0 || to >= cycle.sessions.length) return;
+    final workout = cycle.sessions.removeAt(from);
+    cycle.sessions.insert(to, workout);
+    _resyncWeekdays(cycle);
+    notifyListeners();
+  }
+
+  /// A workout's position decides its date, and the template records the
+  /// weekday it expects — so moving or removing one has to re-derive them or the
+  /// generator will refuse the whole cycle.
+  void _resyncWeekdays(Cycle cycle) {
+    for (var i = 0; i < cycle.sessions.length; i++) {
+      final weekday = _weekdayFor(cycle, i);
+      if (weekday != null) cycle.sessions[i].weekday = weekday;
+    }
+  }
+
+  String? _weekdayFor(Cycle cycle, int index) {
+    try {
+      final dates = CycleGenerator.trainingDates(
+        DateTime.parse(cycle.startDate),
+        cycle.trainingDays,
+        index + 1,
+      );
+      return CycleGenerator.weekdayAbbreviations[dates[index].weekday - 1];
+    } on Object {
+      return null;
+    }
+  }
+
+  /// The calendar date a workout would land on, for display while planning.
+  DateTime? plannedDate(Cycle cycle, int index) {
+    try {
+      return CycleGenerator.trainingDates(
+        DateTime.parse(cycle.startDate),
+        cycle.trainingDays,
+        index + 1,
+      )[index];
+    } on Object {
+      return null;
+    }
+  }
+
+  void retitleWorkout(Cycle cycle, CycleSession workout, CycleDay day) {
+    workout.cycleDay = day.code;
+    workout.type = day.kind == DayKind.conditioning ? 'metcon' : 'heavy';
+    notifyListeners();
+  }
+
+  Future<void> saveCycles() async {
+    final catalogue = _cycles;
+    if (catalogue == null) return;
+    try {
+      await _folder!.references
+          .write('cycles.json', SessionCoding.encodeJson(catalogue.toJson()));
+      status = 'Saved cycles.json';
+    } catch (error) {
+      status = 'Save failed: $error';
+    }
+    notifyListeners();
+  }
+
+  Future<void> addExercise(Exercise exercise) async {
+    final catalogue = _catalogue;
+    if (catalogue == null) return;
+    _catalogue = catalogue.withExercise(exercise);
+    _exerciseMapCache.remove(exercise.name);
+    try {
+      await _folder!.references.write(
+        'exercises.json',
+        SessionCoding.encodeJson(_catalogue!.toJson()),
+      );
+      status = 'Added "${exercise.name}" to the catalogue';
+    } catch (error) {
+      status = 'Catalogue save failed: $error';
+    }
+    notifyListeners();
+  }
+
   Future<void> pickFolder() async {
     final chosen = await chooseFolder();
     if (chosen == null) return;
     _folder = chosen;
     _store = SessionStore(chosen.storage);
+    await _loadReferenceFiles();
     _cache.clear();
     session = null;
     selection = null;

@@ -47,6 +47,17 @@ void put(Map<String, dynamic> json, String key, Object? value) {
   if (value != null) json[key] = value;
 }
 
+/// The keys a model does not have a field for, kept so a read-modify-write of a
+/// hand-maintained file cannot silently delete them.
+Map<String, dynamic> unmodelledKeys(
+  Map<String, dynamic> json,
+  Set<String> modelled,
+) =>
+    {
+      for (final entry in json.entries)
+        if (!modelled.contains(entry.key)) entry.key: entry.value,
+    };
+
 double? asDouble(Object? value) => (value as num?)?.toDouble();
 
 int? asInt(Object? value) => (value as num?)?.toInt();

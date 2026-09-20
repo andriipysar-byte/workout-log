@@ -19,7 +19,8 @@ clear names over comments. When in doubt, leave it out.
 - Normalise session files after hand-editing them (sorted keys, no incidental
   diffs on the next save): `dart run bin/wl_fmt.dart` from the core package,
   or `--check` to fail without writing.
-- After editing `exercises.json` or `cycles.json`, re-sync the bundled copies:
+- After editing `exercises.json` or `cycles.json` — by hand *or* through the
+  app's Plan tab, which writes them — re-sync the bundled copies:
   `cd flutter && dart run tool/sync_assets.dart`. A test fails if they drift.
 
 Buildable and verifiable on this machine: macOS and web. Android needs an SDK that
@@ -31,3 +32,7 @@ not proven.
   which holds a working copy and imports/exports (ADR-007).
 - The core carries all domain logic and the Flutter layer stays pure presentation
   (ADR-004); `test/purity_test.dart` enforces the boundary mechanically.
+- `cycles.json` and `exercises.json` are hand-maintained and the app writes them
+  back, so the models keep every key they do not themselves model (`extras` /
+  `presentKeys`). `reference_files_test.dart` pins this: drop a key and a save
+  would silently delete it from the user's file.

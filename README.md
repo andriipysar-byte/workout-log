@@ -61,6 +61,16 @@ flutter analyze && flutter test
 cd packages/workout_log_core && dart test         # the domain suite
 ```
 
+## The three screens
+
+- **List** — the session editor: header fields, block cards, and the notation
+  field that turns `6 × [70, 80, 90, 100, 110]` into sets.
+- **Cycle** — what actually happened: exercises by cycle day, a month calendar,
+  and the muscle map of the whole cycle.
+- **Plan** — what is *going* to happen: create, clone and edit cycles in
+  `cycles.json`, add workouts following the A1/A2 convention, pick exercises
+  from the catalogue or add new ones, and see each planned day's muscle map.
+
 ## Current phase
 
 **Phase 1** — entry app: enter sessions, write JSON files. Backfill the

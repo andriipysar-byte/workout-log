@@ -98,8 +98,14 @@ abstract final class CycleGenerator {
           durationMin: template.durationMin,
         );
       case 'strength':
+        final exercise = template.exercise;
+        if (exercise == null || exercise.isEmpty) {
+          throw CycleGeneratorException(
+            'a strength block in this cycle has no exercise yet',
+          );
+        }
         return StrengthBlock(
-          exercise: template.exercise!,
+          exercise: exercise,
           sets: [for (final reps in template.setsReps) WorkSet(reps: reps)],
           notes: notes,
         );
@@ -117,6 +123,37 @@ abstract final class CycleGenerator {
           'unknown block type: "${template.type}"',
         );
     }
+  }
+
+  /// A session built from a template for display only, skipping blocks that are
+  /// still blank.
+  ///
+  /// Separate from [generate] on purpose: writing a half-finished plan to a
+  /// session file should fail loudly, but showing the user a muscle map of the
+  /// plan they are part-way through writing should not.
+  static Session preview(CycleSession template, {DateTime? on}) {
+    final when = on ?? DateTime(2000);
+    final blocks = <Block>[];
+    for (final block in template.blocks) {
+      try {
+        final built = blockFromTemplate(block);
+        // A planned main lift carries notes but no `sets_reps`, so by volume it
+        // would score zero and vanish from the day's muscle map — the one
+        // exercise the day is built around. In a plan, choosing an exercise is
+        // itself the commitment, so it counts as one set.
+        if (built is StrengthBlock && built.sets.isEmpty) {
+          built.sets = [WorkSet()];
+        }
+        blocks.add(built);
+      } on CycleGeneratorException {
+        continue;
+      }
+    }
+    return Session(
+      date: isoDate(when),
+      cycleDay: template.cycleDay,
+      blocks: blocks,
+    );
   }
 
   static String isoDate(DateTime when) =>

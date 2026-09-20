@@ -49,14 +49,43 @@ class DirectoryStorage implements SessionStorage {
   File _file(String id) => File('${directory.path}/$id');
 }
 
-Future<SessionFolder> openDefaultFolder() async {
-  final directory = await _defaultDirectory();
-  return SessionFolder(
-    storage: DirectoryStorage(directory),
-    canChooseFolder: true,
-    isBrowserCopy: false,
-  );
+/// `exercises.json` and `cycles.json` live one level above the session folder,
+/// which is the repository layout: `<repo>/data/*.json` beside `<repo>/*.json`.
+class FileReferenceStore implements ReferenceStore {
+  FileReferenceStore(this.directory);
+
+  final Directory directory;
+
+  @override
+  bool get canWrite => directory.existsSync();
+
+  @override
+  String get label => directory.path;
+
+  @override
+  Future<String?> read(String name) async {
+    final file = File('${directory.path}/$name');
+    return file.existsSync() ? file.readAsString() : null;
+  }
+
+  @override
+  Future<void> write(String name, String contents) async {
+    final file = File('${directory.path}/$name');
+    final temporary = File('${file.path}.tmp');
+    await temporary.writeAsString(contents, flush: true);
+    await temporary.rename(file.path);
+  }
 }
+
+SessionFolder _folderAt(Directory directory) => SessionFolder(
+      storage: DirectoryStorage(directory),
+      references: FileReferenceStore(directory.parent),
+      canChooseFolder: true,
+      isBrowserCopy: false,
+    );
+
+Future<SessionFolder> openDefaultFolder() async =>
+    _folderAt(await _defaultDirectory());
 
 Future<SessionFolder?> chooseFolder() async {
   final path = await FilePicker.platform.getDirectoryPath(
@@ -64,11 +93,7 @@ Future<SessionFolder?> chooseFolder() async {
   );
   if (path == null) return null;
   await (await SharedPreferences.getInstance()).setString(_lastFolderKey, path);
-  return SessionFolder(
-    storage: DirectoryStorage(Directory(path)),
-    canChooseFolder: true,
-    isBrowserCopy: false,
-  );
+  return _folderAt(Directory(path));
 }
 
 /// Desktop resolves the real folder (ADR-001); a sandboxed platform can only

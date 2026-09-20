@@ -5,10 +5,19 @@ import 'package:provider/provider.dart';
 import '../app_model.dart';
 import 'cycle_view.dart';
 import 'new_session_dialog.dart';
+import 'plan_view.dart';
 import 'session_editor.dart';
 import 'theme.dart';
 
-enum SidebarTab { list, cycle }
+enum SidebarTab {
+  list('List'),
+  cycle('Cycle'),
+  plan('Plan');
+
+  const SidebarTab(this.label);
+
+  final String label;
+}
 
 class RootView extends StatefulWidget {
   const RootView({super.key});
@@ -80,7 +89,11 @@ class _RootViewState extends State<RootView> {
 
               return Scaffold(
                 appBar: AppBar(
-                  title: Text(_tab == SidebarTab.cycle ? 'Cycle' : 'Sessions'),
+                  title: Text(switch (_tab) {
+                    SidebarTab.cycle => 'Cycle',
+                    SidebarTab.plan => 'Plan',
+                    SidebarTab.list => 'Sessions',
+                  }),
                   actions: [
                     if (model.canChooseFolder)
                       IconButton(
@@ -103,13 +116,13 @@ class _RootViewState extends State<RootView> {
                       icon: const Icon(Icons.refresh),
                       onPressed: () => model.refresh(fromDisk: true),
                     ),
-                    if (model.selection != null)
+                    if (model.selection != null && _tab != SidebarTab.plan)
                       IconButton(
                         tooltip: 'Delete session',
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () => _deleteSession(model),
                       ),
-                    if (model.session != null)
+                    if (model.session != null && _tab != SidebarTab.plan)
                       IconButton(
                         tooltip: 'Save (⌘S)',
                         icon: const Icon(Icons.save),
@@ -166,10 +179,9 @@ class _Sidebar extends StatelessWidget {
                   showSelectedIcon: false,
                   style:
                       const ButtonStyle(visualDensity: VisualDensity.compact),
-                  segments: const [
-                    ButtonSegment(value: SidebarTab.list, label: Text('List')),
-                    ButtonSegment(
-                        value: SidebarTab.cycle, label: Text('Cycle')),
+                  segments: [
+                    for (final tab in SidebarTab.values)
+                      ButtonSegment(value: tab, label: Text(tab.label)),
                   ],
                   selected: {tab},
                   onSelectionChanged: (s) => onTabChanged(s.first),
@@ -233,6 +245,7 @@ class _Detail extends StatelessWidget {
   Widget build(BuildContext context) {
     final model = context.watch<AppModel>();
     if (tab == SidebarTab.cycle) return const CycleView();
+    if (tab == SidebarTab.plan) return const PlanView();
 
     final session = model.session;
     if (session == null) {

@@ -13,6 +13,9 @@ Goal: **get years of training out of the notebook and into the format.**
       usability point, see below
 - [x] Validation: warn, never block. A weird session is still a real session.
 - [x] Create and delete a session; new sessions expand from a `cycles.json` template
+- [x] Cycle planning: create, clone and edit cycles; add, reorder, rename and
+      remove workouts; choose exercises from the catalogue or add new ones; see
+      each planned day's muscle map
 - [ ] Backfill the paper journal and the CSV history
 
 **Why a desktop entry app first, before the phone.** Backfilling years of history is
@@ -26,10 +29,20 @@ That is the phase working, not failing.
 the app is dead and the notebook wins — correctly. Terse text input that parses
 the real notation beats a grid of dropdowns. Type the line, get the sets.
 
-**Not in scope, deliberately.** Adding, reordering or deleting a block; editing an
-individual set outside the notation field; editing a metcon. Blocks and sets are
-edited by retyping the notation line, and metcons are transcribed by hand. Each of
-these is a real gap — none is on the critical path to a backfilled archive.
+**The workout code.** A workout is `<letter><number>`: the letter groups workouts
+by main muscle emphasis, the number is `1` for CrossFit and `2` for hard work —
+A1, A2, B1, B2, … The planner picks both from a control rather than a text field,
+so the convention holds across a cycle, and it uses the number to pre-fill the
+day's blocks: a `1` day starts as warm-up, explosive lift, metcon, accessory,
+grip, cooldown; a `2` day as warm-up, hyperextension, main lift, accessories,
+grip, cooldown. Everything stays editable. `CycleDay.tryParse` returns null
+rather than throwing, so a hand-written code outside the convention still reads.
+
+**Not in scope, deliberately.** In the *session* editor: adding, reordering or
+deleting a block; editing an individual set outside the notation field; editing a
+metcon. Sessions are edited by retyping the notation line, and metcons are
+transcribed by hand. Planned blocks, by contrast, are fully editable — that is
+where structure is decided.
 
 ## Phase 2 — Analytics *(next)*
 
