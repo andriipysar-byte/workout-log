@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@source "./src/**/*.rs";
+
+/* The accent the rest of the palette is built around — also the badge colour
+   for a day whose dominant muscle group is unknown. */
+@theme {
+  --color-accent: #2a78d6;
+}

@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = ["crates/workout-log-core", "crates/workout-log-mcp", "crates/workout-log-app"]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+publish = false
+
+[workspace.dependencies]
+workout-log-core = { path = "crates/workout-log-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+indexmap = { version = "2", features = ["serde"] }
+thiserror = "2"
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
