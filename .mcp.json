@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "workout-log": {
-      "command": "dart",
-      "args": ["run", "mcp/bin/workout_log_mcp.dart"],
+      "command": "cargo",
+      "args": ["run", "--quiet", "--release", "-p", "workout-log-mcp", "--"],
       "env": {}
     }
   }

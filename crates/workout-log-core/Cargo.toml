@@ -1,0 +1,18 @@
+[package]
+name = "workout-log-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Domain core for WorkoutLog — models, notation parsing, storage and analytics."
+
+[lib]
+name = "workout_log_core"
+path = "src/lib.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+indexmap.workspace = true
+thiserror.workspace = true
+regex.workspace = true
+chrono.workspace = true
