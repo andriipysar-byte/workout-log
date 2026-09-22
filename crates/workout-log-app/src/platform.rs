@@ -2,7 +2,7 @@
 //! (ADR-004); this is the desktop side of it, plus the browser working copy
 //! ADR-007 falls back to where there is no folder to point at.
 
-use workout_log_core::io::session_storage::{MemoryStorage, SessionStorage};
+use workout_log_core::io::session_storage::SessionStorage;
 
 /// `exercises.json` and `cycles.json` compiled in, so a folder that has no copy
 /// of its own still starts with the catalogue the app shipped with.
@@ -18,8 +18,10 @@ pub trait ReferenceStore {
     fn write(&self, name: &str, contents: &str) -> Result<(), String>;
 }
 
+#[cfg(not(feature = "desktop"))]
 pub struct BundledReferenceStore;
 
+#[cfg(not(feature = "desktop"))]
 impl ReferenceStore for BundledReferenceStore {
     fn can_write(&self) -> bool {
         false
@@ -136,7 +138,7 @@ mod native {
         folder_at(default_directory())
     }
 
-    pub fn open_folder(directory: PathBuf) -> SessionFolder {
+    fn open_folder(directory: PathBuf) -> SessionFolder {
         remember(&directory);
         folder_at(directory)
     }
@@ -228,12 +230,14 @@ mod native {
 }
 
 #[cfg(feature = "desktop")]
-pub use native::{choose_folder, export_files, import_files, open_default_folder, open_folder};
+pub use native::{choose_folder, export_files, import_files, open_default_folder};
 
 /// ADR-007: a browser has no folder to point at, so it holds a working copy and
 /// the user's folder stays canonical through import and export.
 #[cfg(not(feature = "desktop"))]
 pub fn open_default_folder() -> SessionFolder {
+    use workout_log_core::io::session_storage::MemoryStorage;
+
     SessionFolder {
         storage: Box::new(MemoryStorage::new("browser working copy")),
         references: Box::new(BundledReferenceStore),
@@ -256,7 +260,3 @@ pub fn import_files() -> Vec<(String, String)> {
 pub fn export_files(_files: &[(String, String)]) -> Option<String> {
     None
 }
-
-#[cfg(not(feature = "desktop"))]
-#[allow(dead_code)]
-fn memory_storage_is_used(_: MemoryStorage) {}
