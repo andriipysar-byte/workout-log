@@ -32,7 +32,7 @@ jobs:
       - name: Install toolchain and Qt 6
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build qt6-base-dev qt6-svg-dev libgl1-mesa-dev nlohmann-json3-dev
+          sudo apt-get install -y clang ninja-build qt6-base-dev qt6-svg-dev libgl1-mesa-dev nlohmann-json3-dev
       - run: cmake --preset ${{ matrix.preset }}
       - run: cmake --build --preset ${{ matrix.preset }}
       - run: ctest --preset ${{ matrix.preset }}

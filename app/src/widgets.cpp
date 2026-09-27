@@ -5,6 +5,8 @@
 #include <QLabel>
 #include <QPushButton>
 
+#include <cmath>
+
 #include "app_model.hpp"
 #include "theme.hpp"
 #include "workoutlog/dart_parse.hpp"

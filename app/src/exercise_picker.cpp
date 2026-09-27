@@ -9,6 +9,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 #include "app_model.hpp"
 #include "theme.hpp"
 #include "workoutlog/utf8.hpp"

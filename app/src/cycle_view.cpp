@@ -11,6 +11,8 @@
 #include <QStyledItemDelegate>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 #include "app_model.hpp"
 #include "muscle_map_widget.hpp"
 #include "theme.hpp"

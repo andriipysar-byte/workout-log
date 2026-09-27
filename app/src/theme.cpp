@@ -4,6 +4,8 @@
 #include <QPalette>
 #include <QStyleFactory>
 
+#include <algorithm>
+
 namespace theme {
 
 QColor group_color(wl::MuscleGroup group) {

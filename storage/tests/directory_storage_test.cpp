@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
 
+#include <cstdlib>
 #include <filesystem>
 
 #include "workoutlog/directory_storage.hpp"
