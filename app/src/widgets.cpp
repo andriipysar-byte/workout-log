@@ -13,7 +13,7 @@
 #include "workoutlog/json.hpp"
 
 OptionalField::OptionalField(const QString& placeholder, const std::optional<std::string>& value,
-                             std::function<void(std::optional<std::string>)> on_changed, int width, QWidget* parent)
+                             const std::function<void(std::optional<std::string>)>& on_changed, int width, QWidget* parent)
     : QLineEdit(parent) {
     setPlaceholderText(placeholder);
     setText(value ? qs(*value) : QString());
@@ -28,10 +28,10 @@ QString NumberField::format(double value) {
 }
 
 NumberField::NumberField(const QString& placeholder, std::optional<double> value,
-                         std::function<void(std::optional<double>)> on_changed, int width, QWidget* parent)
+                         const std::function<void(std::optional<double>)>& on_changed, int width, QWidget* parent)
     : OptionalField(
           placeholder, value ? std::optional<std::string>(ss(format(*value))) : std::nullopt,
-          [on_changed](std::optional<std::string> text) {
+          [on_changed](const std::optional<std::string>& text) {
               on_changed(text ? wl::dart_double_parse(*text) : std::nullopt);
           },
           width, parent) {}

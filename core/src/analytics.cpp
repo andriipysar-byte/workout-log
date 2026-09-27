@@ -332,7 +332,7 @@ namespace {
 bool reps_collapse(const std::vector<WorkSet>& sets) {
     std::vector<std::int64_t> reps;
     for (const auto& s : sets)
-        if (s.recorded_reps().value_or(0) > 0) reps.push_back(*s.recorded_reps());
+        if (auto r = s.recorded_reps(); r && *r > 0) reps.push_back(*r);
     if (reps.size() < 3) return false;
     for (size_t i = 1; i < reps.size(); ++i)
         if (reps[i] >= reps[i - 1]) return false;

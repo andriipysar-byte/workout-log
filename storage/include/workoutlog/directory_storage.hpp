@@ -36,7 +36,7 @@ std::string read_file(const std::filesystem::path& path);
 void write_file_atomically(const std::filesystem::path& path, const std::string& contents);
 
 // The nearest ancestor of `start` holding cycles.json — the repository root.
-std::optional<std::filesystem::path> find_repo_root(std::filesystem::path start = std::filesystem::current_path());
+std::optional<std::filesystem::path> find_repo_root(const std::filesystem::path& start = std::filesystem::current_path());
 
 std::filesystem::path expand_tilde(const std::string& path);
 

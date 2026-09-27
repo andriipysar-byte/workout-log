@@ -149,7 +149,7 @@ QWidget* NewExerciseDialog::muscle_picker(const QString& title, std::set<std::st
     const Catalogue* catalogue = model_.catalogue();
     std::vector<std::string> muscles = catalogue ? catalogue->known_muscles() : std::vector<std::string>{};
     for (size_t i = 0; i < muscles.size(); ++i) {
-        const std::string muscle = muscles[i];
+        const std::string& muscle = muscles[i];
         auto* chip = new QPushButton(qs(muscle));
         chip->setCheckable(true);
         chip->setAutoDefault(false);

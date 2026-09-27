@@ -43,25 +43,25 @@ QString join_summaries(const std::vector<WorkSet>& sets, const char* separator) 
     return parts.join(separator);
 }
 
-void cardio(QVBoxLayout* layout, CardioBlock& b, std::function<void()> changed) {
+void cardio(QVBoxLayout* layout, CardioBlock& b, const std::function<void()>& changed) {
     layout->addWidget(header("🏃", "Cardio"));
     auto* row = new QHBoxLayout;
     row->addWidget(new OptionalField(
         "machine", b.machine.empty() ? std::nullopt : std::optional(b.machine),
-        [&b, changed](auto v) { b.machine = v.value_or(""); changed(); }, 200));
-    row->addWidget(new NumberField("min", b.duration_min, [&b, changed](auto v) { b.duration_min = v; changed(); }, 80));
+        [&b, changed](const auto& v) { b.machine = v.value_or(""); changed(); }, 200));
+    row->addWidget(new NumberField("min", b.duration_min, [&b, changed](auto v) { b.duration_min = std::move(v); changed(); }, 80));
     row->addWidget(
-        new NumberField("distance m", b.distance_m, [&b, changed](auto v) { b.distance_m = v; changed(); }, 110));
-    row->addWidget(new OptionalField("end", b.end_time, [&b, changed](auto v) { b.end_time = v; changed(); }, 80));
+        new NumberField("distance m", b.distance_m, [&b, changed](auto v) { b.distance_m = std::move(v); changed(); }, 110));
+    row->addWidget(new OptionalField("end", b.end_time, [&b, changed](auto v) { b.end_time = std::move(v); changed(); }, 80));
     row->addStretch();
     layout->addLayout(row);
 }
 
-void cooldown(QVBoxLayout* layout, CooldownBlock& b, std::function<void()> changed) {
+void cooldown(QVBoxLayout* layout, CooldownBlock& b, const std::function<void()>& changed) {
     layout->addWidget(header("🌬", "Cooldown"));
     auto* row = new QHBoxLayout;
-    row->addWidget(new OptionalField("end", b.end_time, [&b, changed](auto v) { b.end_time = v; changed(); }, 90));
-    row->addWidget(new OptionalField("notes", b.notes, [&b, changed](auto v) { b.notes = v; changed(); }));
+    row->addWidget(new OptionalField("end", b.end_time, [&b, changed](auto v) { b.end_time = std::move(v); changed(); }, 90));
+    row->addWidget(new OptionalField("notes", b.notes, [&b, changed](auto v) { b.notes = std::move(v); changed(); }));
     layout->addLayout(row);
 }
 

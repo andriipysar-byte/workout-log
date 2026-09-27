@@ -110,7 +110,7 @@ struct Checker {
                         "goes backwards: " + dart_double(*split) + " after " + dart_double(*previous_split) +
                             " — splits are cumulative, not per round");
             if (split) previous_split = split;
-            if (round.round != static_cast<std::int64_t>(r + 1))
+            if (round.round != static_cast<std::int64_t>(r) + 1)
                 warning(round_path + ".round",
                         "is " + std::to_string(round.round) + " at position " + std::to_string(r + 1));
         }

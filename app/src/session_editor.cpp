@@ -51,13 +51,13 @@ SessionEditor::SessionEditor(AppModel& model, QWidget* parent) : QScrollArea(par
     };
     add(flow, "Date",
         new OptionalField("YYYY-MM-DD", session.date,
-                          [&session, changed](auto v) { session.date = v.value_or(""); changed(); }, 110));
+                          [&session, changed](const auto& v) { session.date = v.value_or(""); changed(); }, 110));
     add(flow, "Cycle day",
         new OptionalField("A1", session.cycle_day,
-                          [&session, changed](auto v) { session.cycle_day = v.value_or(""); changed(); }, 60));
+                          [&session, changed](const auto& v) { session.cycle_day = v.value_or(""); changed(); }, 60));
     add(flow, "Start",
         new OptionalField("H:MM", session.start_time,
-                          [&session, changed](auto v) { session.start_time = v; changed(); }, 60));
+                          [&session, changed](auto v) { session.start_time = std::move(v); changed(); }, 60));
     auto* kind = new QComboBox;
     for (size_t i = 0; i < enum_count<Kind>(); ++i) kind->addItem(qs(std::string(name(static_cast<Kind>(i)))));
     kind->setCurrentIndex(static_cast<int>(session.kind));
@@ -68,10 +68,10 @@ SessionEditor::SessionEditor(AppModel& model, QWidget* parent) : QScrollArea(par
     add(flow, "Kind", kind);
     flow->addStretch();
     add(second, "Bodyweight",
-        new NumberField("kg", session.bodyweight_kg, [&session, changed](auto v) { session.bodyweight_kg = v; changed(); },
+        new NumberField("kg", session.bodyweight_kg, [&session, changed](auto v) { session.bodyweight_kg = std::move(v); changed(); },
                         70));
     add(second, "Notes",
-        new OptionalField("", session.notes, [&session, changed](auto v) { session.notes = v; changed(); }), 1);
+        new OptionalField("", session.notes, [&session, changed](auto v) { session.notes = std::move(v); changed(); }), 1);
     layout->addWidget(header);
     layout->addWidget(divider());
 

@@ -20,6 +20,10 @@ fi
 files=$(cd "$ROOT" && git ls-files 'core/src/*.cpp' 'storage/src/*.cpp' 'tools/*.cpp' 'app/src/*.cpp')
 jobs=$( (nproc || sysctl -n hw.ncpu) 2>/dev/null)
 
+# A Homebrew clang-tidy does not know where Apple's SDK headers live.
+extra=()
+if command -v xcrun >/dev/null; then extra=(--extra-arg="-isysroot$(xcrun --show-sdk-path)"); fi
+
 cd "$ROOT"
 # shellcheck disable=SC2086
-printf '%s\n' $files | xargs -P "$jobs" -n 1 "$TIDY" -p "$BUILD" --quiet --warnings-as-errors='*'
+printf '%s\n' $files | xargs -P "$jobs" -n 1 "$TIDY" -p "$BUILD" --quiet --warnings-as-errors='*' "${extra[@]}"

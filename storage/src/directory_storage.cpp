@@ -58,7 +58,7 @@ fs::path DirectoryStorage::file(const std::string& id) const {
     return directory_ / id;
 }
 
-std::optional<fs::path> find_repo_root(fs::path start) {
+std::optional<fs::path> find_repo_root(const fs::path& start) {
     fs::path dir = fs::absolute(start);
     while (true) {
         if (fs::exists(dir / "cycles.json")) return dir;

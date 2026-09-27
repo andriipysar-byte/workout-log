@@ -19,7 +19,7 @@ class OptionalField : public QLineEdit {
 
 public:
     OptionalField(const QString& placeholder, const std::optional<std::string>& value,
-                  std::function<void(std::optional<std::string>)> on_changed, int width = 0,
+                  const std::function<void(std::optional<std::string>)>& on_changed, int width = 0,
                   QWidget* parent = nullptr);
 };
 
@@ -28,7 +28,7 @@ class NumberField : public OptionalField {
 
 public:
     NumberField(const QString& placeholder, std::optional<double> value,
-                std::function<void(std::optional<double>)> on_changed, int width = 0, QWidget* parent = nullptr);
+                const std::function<void(std::optional<double>)>& on_changed, int width = 0, QWidget* parent = nullptr);
 
     // Integral values without a `.0`, as the files spell them.
     static QString format(double value);

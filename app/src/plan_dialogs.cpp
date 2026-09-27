@@ -153,7 +153,7 @@ void CycleDialog::submit() {
     cycle.id = id;
     cycle.name = name;
     cycle.start_date = start;
-    cycle.training_days = ordered;
+    cycle.training_days = std::move(ordered);
     model_.cycle_edited();
     result_ = index;
     accept();

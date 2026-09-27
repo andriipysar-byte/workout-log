@@ -52,7 +52,7 @@ std::optional<std::vector<std::int64_t>> opt_int_list(const Json& object, std::s
 std::vector<std::string> string_list(const Json& object, std::string_view key);
 const Json& req_array(const Json& object, std::string_view key);
 const Json* opt_array(const Json& object, std::string_view key);
-const Json& as_object(const Json& value, std::string_view what);
+void as_object(const Json& value, std::string_view what);
 
 double to_double(const Json& number, std::string_view what);
 std::int64_t to_int(const Json& number, std::string_view what);

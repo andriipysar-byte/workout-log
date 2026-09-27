@@ -1,17 +1,31 @@
 # Checks that find bugs and waste, not checks that restyle. Each disabled one
-# below fires on an idiom this code uses on purpose.
+# below fires on an idiom this code uses on purpose:
+# - the UTF-8 and colour code does bit arithmetic on promoted ints;
+# - std::ranges and std::cmp_* rewrites and braced returns are style only;
+# - push_back in a loop over a small list is not worth a reserve;
+# - a throw escaping a tool's main or a Qt slot is the intended crash;
+# - optionals set by an invariant (a constructor, a dialog mode) read as unchecked.
 Checks: >
   -*,
   bugprone-*,
   -bugprone-easily-swappable-parameters,
+  -bugprone-signed-bitwise,
+  -bugprone-exception-escape,
+  -bugprone-unchecked-optional-access,
   clang-analyzer-*,
   performance-*,
   -performance-enum-size,
+  -performance-inefficient-vector-operation,
+  -performance-inefficient-string-concatenation,
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-use-nodiscard,
   -modernize-avoid-c-arrays,
+  -modernize-avoid-c-style-cast,
   -modernize-use-designated-initializers,
+  -modernize-use-ranges,
+  -modernize-use-integer-sign-comparison,
+  -modernize-return-braced-init-list,
   misc-unused-using-decls,
   misc-redundant-expression
 

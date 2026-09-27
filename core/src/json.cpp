@@ -69,7 +69,7 @@ std::string dart_num(const Json& number) {
 
 namespace {
 
-void write_string(std::string& out, const std::string& s) {
+void write_string(std::string& out, std::string_view s) {
     out.push_back('"');
     for (unsigned char c : s) {
         switch (c) {
@@ -119,20 +119,20 @@ void write(std::string& out, const Json& v, int depth, bool sorted) {
                 out += "{}";
                 return;
             }
-            std::vector<const std::string*> keys;
+            std::vector<std::string_view> keys;
             keys.reserve(v.size());
-            for (auto it = v.begin(); it != v.end(); ++it) keys.push_back(&it.key());
+            for (auto it = v.begin(); it != v.end(); ++it) keys.emplace_back(it.key());
             if (sorted)
-                std::sort(keys.begin(), keys.end(), [](auto* a, auto* b) { return *a < *b; });
+                std::sort(keys.begin(), keys.end());
             out.push_back('{');
             bool first = true;
-            for (const auto* key : keys) {
+            for (auto key : keys) {
                 if (!first) out.push_back(',');
                 first = false;
                 newline(out, depth + 1);
-                write_string(out, *key);
+                write_string(out, key);
                 out += ": ";
-                write(out, v.at(*key), depth + 1, sorted);
+                write(out, v.at(std::string(key)), depth + 1, sorted);
             }
             newline(out, depth);
             out.push_back('}');
@@ -255,9 +255,8 @@ const Json* opt_array(const Json& object, std::string_view key) {
     return v;
 }
 
-const Json& as_object(const Json& value, std::string_view what) {
+void as_object(const Json& value, std::string_view what) {
     if (!value.is_object()) wrong_type(what, "an object");
-    return value;
 }
 
 std::optional<std::vector<std::int64_t>> opt_int_list(const Json& object, std::string_view key) {

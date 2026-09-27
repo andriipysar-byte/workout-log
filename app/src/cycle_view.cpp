@@ -125,7 +125,8 @@ protected:
         int leading = (month.dayOfWeek() - first + 7) % 7;
         for (int d = 1; d <= month.daysInMonth(); ++d) {
             int slot = leading + d - 1;
-            QRectF rect(slot % 7 * cell_w + 2, 20 + slot / 7 * 44 + 2, cell_w - 4, 40);
+            int row = slot / 7, column = slot % 7;
+            QRectF rect(column * cell_w + 2, 20 + row * 44 + 2, cell_w - 4, 40);
             QDate date(month.year(), month.month(), d);
             auto key = ss(date.toString(Qt::ISODate));
             auto it = owner_.model_.calendar().find(key);
@@ -155,7 +156,7 @@ protected:
                 painter.setPen(Qt::white);
                 painter.drawText(badge, Qt::AlignCenter, code);
                 painter.setFont(small);
-                cells_.push_back({rect, info->id});
+                cells_.emplace_back(rect, info->id);
             }
         }
     }

@@ -106,7 +106,7 @@ Block block_from_template(const BlockTemplate& tmpl) {
             set.reps = reps;
             b.sets.push_back(set);
         }
-        b.notes = notes;
+        b.notes = std::move(notes);
         return b;
     }
     if (tmpl.type == "metcon") {
@@ -114,7 +114,7 @@ Block block_from_template(const BlockTemplate& tmpl) {
         b.format = tmpl.format;
         b.scheme = tmpl.scheme;
         b.exercises = tmpl.exercises;
-        b.notes = notes;
+        b.notes = std::move(notes);
         return b;
     }
     if (tmpl.type == "cooldown") return CooldownBlock{};
@@ -134,6 +134,8 @@ Session preview_session(const CycleSession& tmpl, std::optional<Date> on) {
                 strength->sets.push_back(WorkSet{});
             s.blocks.push_back(std::move(built));
         } catch (const CycleGeneratorError&) {
+            // A block the template cannot build yet (a strength block with no
+            // exercise) is skipped, so the rest of the day is still generated.
         }
     }
     return s;
