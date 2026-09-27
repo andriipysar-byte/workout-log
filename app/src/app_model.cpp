@@ -50,7 +50,10 @@ void AppModel::open_folder(SessionFolder folder) {
     emit changed();
 }
 
+// The .qrc is compiled into the static wlapp, and a linker drops an object
+// file nothing references, so its registration has to be pulled in by name.
 void AppModel::load_template() {
+    Q_INIT_RESOURCE(resources);
     QFile file(":/muscle-map.svg");
     if (!file.open(QIODevice::ReadOnly)) {
         set_status("Asset load failed: muscle-map.svg");
