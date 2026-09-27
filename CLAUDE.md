@@ -1,4 +1,4 @@
-# WorkoutLog2 — agent guide
+# WorkoutLog — agent guide
 
 ## Comments
 
@@ -8,42 +8,61 @@ quirk, or *why* an approach was chosen over an alternative. Do NOT write comment
 that restate what the code plainly does, label sections, or narrate steps. Prefer
 clear names over comments. When in doubt, leave it out.
 
+## Layout
+
+One C++20 CMake project:
+
+- `core/` — library `wlcore`, the whole domain: models, the JSON canon, the
+  notation parser, validation, cycle planning, analytics, muscle maps. Its only
+  dependency is nlohmann/json. It may not include Qt, `<filesystem>`,
+  `<fstream>` or `<iostream>`; the `purity` ctest fails if it does (ADR-004).
+- `storage/` — library `wlfs`: `DirectoryStorage` (write-then-rename) and repo
+  discovery. The one place the filesystem meets the core.
+- `tools/` — `wl_fmt` and `wl_gen_cycle`.
+- `app/` — the Qt 6 Widgets app. `AppModel` holds state and calls the core;
+  widgets hold no domain rules.
+
 ## Build & verify
 
-- The three packages — `flutter`, `flutter/packages/workout_log_core` and `mcp` —
-  are one pub workspace rooted at the repo root, so `flutter pub get` from any of
-  them resolves all three against the single `pubspec.lock` at the root. That one
-  resolution includes the app's `sdk: flutter` dependency, which is why even the
-  two pure-Dart packages need the Flutter SDK to `pub get`.
-- Domain core (pure Dart, no Flutter, no `dart:io`):
-  `cd flutter/packages/workout_log_core && dart analyze && dart test`.
-- App: `cd flutter && flutter analyze && flutter test`.
-- MCP server (pure Dart over the core, with `dart:io`):
-  `cd mcp && dart analyze && dart test`. Run it by hand with
-  `dart run bin/workout_log_mcp.dart --repo ..`; it speaks MCP on stdio, so
-  nothing in it may ever write to stdout.
-- Run it: `cd flutter && WORKOUTLOG_DATA=../data flutter run -d macos`.
-- Generate session stubs from a cycle template (replaces the old Python script):
-  `cd flutter/packages/workout_log_core && dart run bin/wl_gen_cycle.dart [--force]`.
-- Normalise session files after hand-editing them (sorted keys, no incidental
-  diffs on the next save): `dart run bin/wl_fmt.dart` from the core package,
-  or `--check` to fail without writing.
-- After editing `exercises.json` or `cycles.json` — by hand *or* through the
-  app's Plan tab, which writes them — re-sync the bundled copies:
-  `cd flutter && dart run tool/sync_assets.dart`. A test fails if they drift.
+- Toolchain: CMake ≥ 3.24, Ninja, a C++20 compiler, Qt 6.4+ with Svg
+  (`brew install qt` / `apt install qt6-base-dev qt6-svg-dev`).
+- `cmake --preset dev && cmake --build --preset dev && ctest --preset dev`
+  runs everything: core, purity, storage, `wl_fmt --check` over `data/`, and the
+  app's model and widget tests offscreen.
+- `asan` is the same with ASan + UBSan; `headless` skips the Qt app (for a box
+  without Qt); `release` for a real build.
+- Run it: `WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog.app/Contents/MacOS/WorkoutLog`
+  on macOS, `build/dev/app/WorkoutLog` on Linux.
+- Generate session stubs from a cycle template:
+  `build/dev/tools/wl_gen_cycle [--cycle <id>] [--force]`.
+- Normalise session files after hand-editing them:
+  `build/dev/tools/wl_fmt` (or `--check` to fail without writing).
 
-Buildable and verifiable on this machine: macOS and web. The tree carries runners
-for macOS, iOS, Linux and web only — Android and Windows were generated scaffolding
-that nothing ever touched, and `cd flutter && flutter create --platforms=android .`
-brings either back byte-identical the day it is wanted. Linux needs that host to
-build on. iOS builds require a simulator/device run that has not been exercised
-here — configured and analyzed, not proven.
+Buildable and verifiable on this machine: macOS. Linux builds in CI.
 
-- Data files in `data/` are the source of truth (ADR-001), except in the browser,
-  which holds a working copy and imports/exports (ADR-007).
-- The core carries all domain logic and the Flutter layer stays pure presentation
-  (ADR-004); `test/purity_test.dart` enforces the boundary mechanically.
+## Data-file integrity
+
+- Data files in `data/` are the source of truth (ADR-001).
+- The on-disk spelling is fixed: keys sorted at every depth, integral doubles
+  without `.0`, Dart-style number formatting, raw UTF-8, trailing newline, no
+  nulls. `round_trip_test.cpp` checks every file in `data/` re-encodes byte for
+  byte; a change to `core/src/json.cpp` that breaks that breaks every user file
+  on its next save.
 - `cycles.json` and `exercises.json` are hand-maintained and the app writes them
-  back, so the models keep every key they do not themselves model (`extras` /
-  `presentKeys`). `reference_files_test.dart` pins this: drop a key and a save
-  would silently delete it from the user's file.
+  back, so the models keep every key they do not model (`extras` /
+  `present_keys`). The round-trip tests pin this: drop a key and a save would
+  silently delete it from the user's file.
+- Tests never write to `data/`: the app tests run against `MemoryStorage` and
+  `MemoryReferenceStore`, the storage tests against a temp directory.
+
+## C++ conventions
+
+- Nullable fields are `std::optional`; a key absent from a file stays absent.
+- Blocks are a `std::variant`; dispatch with `std::visit` or `std::get_if`, so a
+  new block type fails to compile everywhere it is not handled.
+- Text is UTF-8 in `std::string`; anything that scans or case-folds it goes
+  through `wl::utf8` (the catalogue is Ukrainian, the notation mixes Latin and
+  Cyrillic look-alikes).
+- Errors at the file boundary throw `wl::FormatError`; a bulk load collects
+  failures rather than throwing (a corrupt file costs one session, never the
+  archive).

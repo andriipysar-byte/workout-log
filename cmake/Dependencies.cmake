@@ -23,5 +23,5 @@ set(DOCTEST_NO_INSTALL ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json doctest)
 
 if(WL_BUILD_APP)
-    find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Svg Test)
+    find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Svg Test)
 endif()

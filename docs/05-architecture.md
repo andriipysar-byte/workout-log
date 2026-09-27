@@ -5,25 +5,23 @@
 One domain core, several surfaces:
 
 ```
-   macOS   Linux   Windows   iOS   Android   Web        an MCP client
-      └───────┴────────┴──────┴───────┴───────┘                  │
-                         │                              workout_log_mcp
-              Flutter UI (pure presentation)              (tools over stdio)
-                         │                                       │
-                         └───────────────┬───────────────────────┘
-                                         │
-      workout_log_core — analytics, parsing, validation
-                    (pure Dart: no Flutter, no dart:io)
-                         │
-              SessionStorage (one per platform)
-                         │
-           JSON session files  ←  source of truth
-                         │
-           Folder sync (iCloud Drive / git / Dropbox)
+              macOS        Linux
+                 └──────┬──────┘
+          Qt Widgets app (app/) — pure presentation
+                        │
+     wlcore (core/) — models, parsing, validation, analytics
+            (C++20: no Qt, no filesystem, no streams)
+                        │
+       SessionStorage — DirectoryStorage (storage/)
+                        │
+          JSON session files  ←  source of truth
+                        │
+          Folder sync (iCloud Drive / git / Dropbox)
 ```
 
-The web surface is the exception: it has no folder, so it holds a working copy and
-imports/exports instead. See ADR-007.
+The CLI tools (`wl_fmt`, `wl_gen_cycle`) are a third surface over the same
+core. Web and mobile were surfaces of the Flutter app and left with it; see the
+second amendment to ADR-005.
 
 ---
 
@@ -52,7 +50,8 @@ First-class in every language the project might plausibly use, less structural
 noise, cleaner diffs. XML buys schema validation I can get from a JSON Schema
 anyway.
 
-The codecs are hand-written rather than generated, in Dart as they were in Swift:
+The codecs are hand-written rather than generated, in C++ as they were in Dart and
+Swift:
 the on-disk shape is not what a generator emits by default — a flat tagged union
 for blocks, sorted keys, omitted nulls, and integral doubles written without a
 `.0`. Each of those is pinned by a test.
@@ -89,6 +88,11 @@ that promise is broken quietly and I will not notice until the port.
 error rather than a convention. `test/purity_test.dart` asserts it directly. The
 Swift package carried the same intent as a comment on the target; a comment cannot
 fail a build.
+
+**How it is enforced (2026-09-27).** The core is the `wlcore` CMake target,
+which links nothing but nlohmann/json. The `purity` ctest scans `core/` and fails
+on any Qt, `<filesystem>`, `<fstream>` or `<iostream>` include, so the boundary is
+still a failing check rather than a convention.
 
 **Verdict after the Flutter port.** It held. Every domain rule — the notation
 grammar, the flat block union, activation weighting, the colour ramp — moved
@@ -148,6 +152,29 @@ the same rules drifting apart in silence. The domain now lives in Dart only, and
 **Revisit when.** A surface arrives that Flutter does not reach, or the analytics
 engine grows heavy enough that a shared native core beats a Dart one.
 
+### Amendment 2, 2026-09-27 — the whole stack moved to C++ and Qt, together
+
+The trigger this time was neither a platform nor performance. It was weight: the
+generated Flutter tree (runners, plugins, a second declarative UI language)
+outweighed the app it carried, for a CRUD tool with planning checks that is only
+used on a desktop. The UI moved to Qt Widgets, macOS and Linux only.
+
+The first amendment is the reason the core moved with it. A Qt UI cannot call a
+Dart core, and the cheap port — Qt over a fresh C++ core, Dart core kept for the
+MCP server — is precisely the two-cores state this ADR already paid for once.
+So the core, the tools and the UI were ported in one branch, with the Dart
+sources as the specification: every Dart core test was re-expressed and passes,
+every file in `data/` re-encodes byte for byte, and `wl_gen_cycle` produces the
+same bytes the Dart generator did. Then the Dart tree was deleted.
+
+**What was given up.** The web and iOS targets, and the MCP server (ADR-008),
+which ran on the Dart core. It can come back as a C++ surface over `wlcore`;
+until then there is nothing to drift.
+
+**One deliberate difference.** `TrainingReport` counts the days in a span on
+calendar dates. The Dart version subtracted local `DateTime`s and came out a day
+short whenever a DST change fell inside the span.
+
 ---
 
 ## ADR-006 — The importer tolerates history
@@ -167,7 +194,13 @@ explicit import and export.
 
 | Platform | Storage |
 |---|---|
-| macOS, Linux, Windows | the real directory: `$WORKOUTLOG_DATA`, else the last folder chosen, else `<cwd>/../data` |
+| macOS, Linux | the real directory: `$WORKOUTLOG_DATA`, else the last folder chosen, else `data/` of the repository around the working directory, else `~/Documents/WorkoutLog` |
+
+The mobile and web rows below were the Flutter app's; they left with it (ADR-005,
+amendment 2) and stand as the reasoning for if either target returns.
+
+| Platform (retired) | Storage |
+|---|---|
 | iOS, Android | the app's documents directory, synced per ADR-003 by whatever syncs that directory |
 | Web | an in-memory working copy, filled by import and written back by download |
 
@@ -178,8 +211,8 @@ not *the* folder: the sandbox is the only directory an app may own.
 
 **Consequence.** `SessionStorage` is an interface declared in the core with four
 methods — list, read, write, delete — and implemented per platform. The core never
-learns which one it is talking to, which is also what keeps `dart:io` out of it
-(ADR-004).
+learns which one it is talking to, which is also what keeps the filesystem out of
+it (ADR-004).
 
 **Trade-off accepted.** On the web the archive is not durable across a reload
 unless the user exports. That is stated in the UI rather than hidden: the status
@@ -189,6 +222,10 @@ letting a browser cache eviction look like data loss — is worse.
 ---
 
 ## ADR-008 — The MCP server is a surface, not a second core
+
+**Status (2026-09-27): withdrawn with the server.** The Dart server was deleted
+with the Dart core (ADR-005, amendment 2). The decision stands for any future
+server: it calls `wlcore` for everything and holds no domain rule.
 
 **Decision.** `mcp/` speaks MCP over stdio and calls `workout_log_core` for
 everything. Argument parsing, the session folder (`dart:io`) and JSON formatting

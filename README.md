@@ -26,11 +26,13 @@ SwiftUI over a Swift core; reaching Linux and Windows added a second UI (Dear
 ImGui over SDL3) over a second domain core, in C++. That is two implementations
 of one set of rules — the exact drift ADR-004 exists to prevent, arrived at by
 honouring ADR-004's letter in each tree separately. Flutter over a Dart core
-replaces all of it, and the Swift and C++ trees were deleted rather than kept.
+replaced all of it; then, because Flutter's generated tree outweighed the app
+itself, the whole stack — core, tools and UI — moved together to C++ with Qt
+Widgets, and the Dart tree was deleted rather than kept beside it.
 
 The files never moved: `data/`, `exercises.json` and `cycles.json` were read by
 each implementation unmodified. The portable asset was the format, exactly as
-ADR-001 claimed. The code was not — it was re-expressed three times.
+ADR-001 claimed. The code was not — it was re-expressed four times.
 
 ## Repository layout
 
@@ -40,9 +42,10 @@ exercises.json            exercise catalogue: canonical names, aliases, muscles
 cycles.json               reusable cycle definitions (session templates)
 *.schema.json             JSON Schema for a session file and for cycles
 docs/                     design docs and decisions
-flutter/                  the app — Flutter, all six targets
-flutter/packages/workout_log_core/   the domain core — pure Dart, no Flutter
-mcp/                      an MCP server over the same core
+core/                     the domain core — C++20, no Qt, no filesystem
+storage/                  the session folder on disk
+tools/                    wl_fmt, wl_gen_cycle
+app/                      the app — Qt 6 Widgets, macOS and Linux
 ```
 
 ## Documents
@@ -59,11 +62,13 @@ mcp/                      an MCP server over the same core
 ## Running it
 
 ```
-cd flutter
-WORKOUTLOG_DATA=../data flutter run -d macos      # or -d chrome
-flutter analyze && flutter test
-cd packages/workout_log_core && dart test         # the domain suite
+cmake --preset dev && cmake --build --preset dev && ctest --preset dev
+WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog.app/Contents/MacOS/WorkoutLog   # macOS
+WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog                                 # Linux
 ```
+
+Needs CMake, Ninja, a C++20 compiler and Qt 6.4+ with Svg. The `headless`
+preset builds the core and tools without Qt.
 
 ## The three screens
 
@@ -74,20 +79,6 @@ cd packages/workout_log_core && dart test         # the domain suite
 - **Plan** — what is *going* to happen: create, clone and edit cycles in
   `cycles.json`, add workouts following the A1/A2 convention, pick exercises
   from the catalogue or add new ones, and see each planned day's muscle map.
-
-## Talking to it
-
-`mcp/` serves the log over MCP, so an assistant can enter a session, fill a slot
-from the paper notation, and ask the archive the questions in
-`docs/04-analytics.md` — rep-band distribution, pattern frequency, top set
-against back-off volume, density, metcon splits. It is a surface over
-`workout_log_core`, not a second implementation of it (ADR-008); it writes the
-same canonical JSON the app writes, and refuses anything that would not parse
-back. The repo ships a `.mcp.json`, so a client started here picks it up:
-
-```
-cd mcp && dart pub get && dart test
-```
 
 ## Current phase
 

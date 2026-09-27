@@ -4,7 +4,8 @@
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
+Icon[
+]
 
 # Resource forks
 ._*
@@ -25,7 +26,8 @@ Icon[]
 .file
 .disk_label*
 lost+found
-.HFS+ Private Directory Data[]
+.HFS+ Private Directory Data[
+]
 
 # Directories potentially created on remote AFP share
 .AppleDB
@@ -56,29 +58,8 @@ Backups.backupdb
 MobileBackups.trash
 tmbootpicker.efi
 
-# Swift Package Manager build artifacts
-.build/
-app/.build/
-.swiftpm/
+# CMake build trees (one per preset)
+build/
 
 # Generated heatmap exports
 out/
-
-# Flutter / Dart
-# The generated flutter/**/.gitignore files cover most of this; these are
-# repeated here so the repo stays clean if one of them is regenerated away.
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-build/
-coverage/
-**/doc/api/
-**/Flutter/ephemeral/
-**/ios/Flutter/.last_build_id
-**/Pods/
-*.iml
-
-# Symbolication / obfuscation output
-app.*.symbols
-app.*.map.json

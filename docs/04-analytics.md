@@ -79,16 +79,16 @@ straight after.
 
 ## Where these live
 
-The engine is pure Dart in `workout_log_core`, so every surface — the app, the
-MCP server — reads the same numbers (ADR-004, ADR-008):
+The engine lives in the C++ core (`core/include/workoutlog/analytics.hpp` and
+`muscles.hpp`), so every surface reads the same numbers (ADR-004):
 
-| Metric | Class |
+| Metric | Where |
 |---|---|
-| Tonnage, rep bands, top set vs back-off, density, metcon splits | `SessionMetrics` |
-| Best set per (variant, rep band), estimated 1RM, back-off volume | `ExerciseProgress` |
-| Band distribution, pattern frequency, combined load, principle alerts | `TrainingReport` |
-| Muscle scores per session or cycle | `MuscleActivation` |
-| Schema and meaning checks over a session | `SessionValidator` |
+| Tonnage, rep bands, top set vs back-off, density, metcon splits | `SessionMetrics::of` |
+| Best set per (variant, rep band), estimated 1RM, back-off volume | `ProgressReport::of` |
+| Band distribution, pattern frequency, combined load, principle alerts | `TrainingReport::of` |
+| Muscle scores per session or cycle | `muscle_activation::for_session` / `for_sessions` |
+| Schema and meaning checks over a session | `validate_session` |
 
 Still unbuilt: postponed/skipped sessions (nothing records them yet), and the
 deload/retest anchors as chart furniture rather than as a report field.

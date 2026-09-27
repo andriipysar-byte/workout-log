@@ -62,29 +62,24 @@ against.
 - [ ] Postponed-session overlay against load
 - [ ] Deload/retest anchors on every chart
 
-## Phase 3 — The platforms that are configured but unproven
+## Phase 3 — Platforms
 
-One Flutter codebase reaches all six, but the tree only carries runners for four:
-macOS, iOS, Linux and web. Two are real today; the other two are scaffolded and
-analyzed but have never been built or run.
+The app is Qt Widgets over the C++ core, for the desktop (ADR-005, amendment 2).
 
 - [x] macOS — builds and runs against the real `data/`
-- [x] Web — builds; holds a working copy and imports/exports (ADR-007)
-- [ ] iOS — capture at the gym: rest timer, metcon round splits, heart rate,
-      and previous performance on this lift visible while lifting
-- [ ] Android — same, once an SDK is installed; its runner was dropped as
-      untouched scaffolding and comes back with
-      `flutter create --platforms=android .`
-- [ ] Linux and Windows — need those hosts to build on, and Windows needs its
-      runner regenerated the same way
+- [ ] Linux — builds and tests in CI; not yet run on a Linux desktop
+- [ ] iOS capture at the gym (rest timer, metcon splits, heart rate, previous
+      performance on this lift) — left with the Flutter app; would return as a
+      separate surface over the same core and files
 - [ ] Portable folder sync to replace iCloud Drive (ADR-003 makes this a
       configuration choice, not a code change)
+- [ ] MCP server over `wlcore` (ADR-008), deleted with the Dart core
 
 ## Phase 4 — Things the current UI cannot do
 
-- [ ] Per-muscle hit-testing and tooltips on the muscle map. This needs the SVG
-      parsed into paths and painted by a `CustomPainter` rather than handed to
-      `flutter_svg` as a string — a significant chunk of work, deferred on purpose.
+- [ ] Per-muscle hit-testing and tooltips on the muscle map. QtSvg can render
+      one element by id, so this needs ids on the template's paths and a hover
+      pass over them — deferred on purpose.
 - [ ] Block and set editing beyond the notation field
 - [ ] Metcon round and split entry
 
@@ -93,5 +88,6 @@ analyzed but have never been built or run.
 The critical path is **the format plus the migrated history**, not any app. Once
 the archive is in the format, everything else is a view over it — and the archive
 is the asset that survives every framework decision I might later regret. The
-Flutter port was that claim being tested: the files were read unchanged by a new
-implementation in a different language. They were.
+Flutter port and then the C++ port were that claim being tested: the files were
+read unchanged by new implementations in different languages. They were — the
+C++ port re-encodes every one of them byte for byte.
