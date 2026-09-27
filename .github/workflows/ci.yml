@@ -17,22 +17,48 @@ concurrency:
 permissions:
   contents: read
 
+# Every job runs on the self-hosted runners that ci/runner/ builds, whose image
+# already carries the toolchain. The repository is public, so a pull request
+# from a fork never reaches that machine: its jobs are skipped instead.
+
 jobs:
-  # Everything, Qt app included. ctest runs the core suite, the purity check
-  # (ADR-004), the storage suite, `wl_fmt --check` over data/, and the app's
-  # model and widget tests offscreen.
   build:
-    runs-on: ubuntu-24.04
+    name: build (${{ matrix.compiler }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, workout-log]
     strategy:
       fail-fast: false
       matrix:
-        preset: [dev, asan]
+        include:
+          - { compiler: clang, preset: dev }
+          - { compiler: gcc, preset: gcc }
     steps:
       - uses: actions/checkout@v4
-      - name: Install toolchain and Qt 6
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang ninja-build qt6-base-dev qt6-svg-dev libgl1-mesa-dev nlohmann-json3-dev
-      - run: cmake --preset ${{ matrix.preset }}
+      - run: cmake --preset ${{ matrix.preset }} -DWL_WERROR=ON
       - run: cmake --build --preset ${{ matrix.preset }}
       - run: ctest --preset ${{ matrix.preset }}
+
+  # tsan leaves the Qt app out: the distribution's Qt is not instrumented, so
+  # its threads would be reported as races in code this project does not own.
+  sanitize:
+    name: sanitize (${{ matrix.preset }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, workout-log]
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, tsan]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake --preset ${{ matrix.preset }} -DWL_WERROR=ON
+      - run: cmake --build --preset ${{ matrix.preset }}
+      - run: ctest --preset ${{ matrix.preset }}
+
+  tidy:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, workout-log]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake --preset dev
+      - run: cmake --build --preset dev
+      - run: ci/tidy.sh build/dev

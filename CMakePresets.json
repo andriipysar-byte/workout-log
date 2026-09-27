@@ -7,45 +7,80 @@
       "hidden": true,
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++" }
-    },
-    {
-      "name": "dev",
-      "displayName": "Debug (./build/dev)",
-      "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
-      "name": "asan",
-      "displayName": "Debug + ASan/UBSan (./build/asan)",
+      "name": "clang-base",
+      "hidden": true,
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "WL_SANITIZE": "ON" }
+      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++" }
     },
     {
-      "name": "release",
-      "displayName": "Release (./build/release)",
+      "name": "gcc-base",
+      "hidden": true,
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": { "CMAKE_CXX_COMPILER": "g++" }
+    },
+    {
+      "name": "dev",
+      "displayName": "clang, Debug (./build/dev)",
+      "inherits": "clang-base"
+    },
+    {
+      "name": "gcc",
+      "displayName": "GCC, Debug (./build/gcc)",
+      "inherits": "gcc-base"
+    },
+    {
+      "name": "asan",
+      "displayName": "clang + ASan/UBSan (./build/asan)",
+      "inherits": "clang-base",
+      "cacheVariables": { "WL_SANITIZE": "address" }
+    },
+    {
+      "name": "tsan",
+      "displayName": "clang + TSan, without the Qt app (./build/tsan)",
+      "description": "The distribution's Qt is not TSan-instrumented, so an app test under TSan reports races inside Qt rather than in this code.",
+      "inherits": "clang-base",
+      "cacheVariables": { "WL_SANITIZE": "thread", "WL_BUILD_APP": "OFF" }
     },
     {
       "name": "headless",
-      "displayName": "Debug without the Qt app (./build/headless)",
-      "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "WL_BUILD_APP": "OFF" }
+      "displayName": "clang, without the Qt app (./build/headless)",
+      "inherits": "clang-base",
+      "cacheVariables": { "WL_BUILD_APP": "OFF" }
+    },
+    {
+      "name": "release",
+      "displayName": "clang, Release (./build/release)",
+      "inherits": "clang-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
+    { "name": "gcc", "configurePreset": "gcc" },
     { "name": "asan", "configurePreset": "asan" },
-    { "name": "release", "configurePreset": "release" },
-    { "name": "headless", "configurePreset": "headless" }
+    { "name": "tsan", "configurePreset": "tsan" },
+    { "name": "headless", "configurePreset": "headless" },
+    { "name": "release", "configurePreset": "release" }
   ],
   "testPresets": [
-    { "name": "base", "hidden": true, "output": { "outputOnFailure": true },
-      "environment": { "QT_QPA_PLATFORM": "offscreen", "ASAN_OPTIONS": "detect_container_overflow=0:halt_on_error=1" } },
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "environment": {
+        "QT_QPA_PLATFORM": "offscreen",
+        "ASAN_OPTIONS": "detect_container_overflow=0:halt_on_error=1",
+        "TSAN_OPTIONS": "halt_on_error=1"
+      }
+    },
     { "name": "dev", "configurePreset": "dev", "inherits": "base" },
+    { "name": "gcc", "configurePreset": "gcc", "inherits": "base" },
     { "name": "asan", "configurePreset": "asan", "inherits": "base" },
-    { "name": "release", "configurePreset": "release", "inherits": "base" },
-    { "name": "headless", "configurePreset": "headless", "inherits": "base" }
+    { "name": "tsan", "configurePreset": "tsan", "inherits": "base" },
+    { "name": "headless", "configurePreset": "headless", "inherits": "base" },
+    { "name": "release", "configurePreset": "release", "inherits": "base" }
   ]
 }

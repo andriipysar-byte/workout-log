@@ -63,3 +63,6 @@ build/
 
 # Generated heatmap exports
 out/
+
+# CI runner secrets
+ci/runner/.env

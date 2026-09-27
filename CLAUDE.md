@@ -29,8 +29,15 @@ One C++20 CMake project:
 - `cmake --preset dev && cmake --build --preset dev && ctest --preset dev`
   runs everything: core, purity, storage, `wl_fmt --check` over `data/`, and the
   app's model and widget tests offscreen.
-- `asan` is the same with ASan + UBSan; `headless` skips the Qt app (for a box
-  without Qt); `release` for a real build.
+- `dev` is clang; `gcc` is the same with GCC. `asan` adds ASan + UBSan, `tsan`
+  adds TSan without the Qt app (the distribution's Qt is not instrumented).
+  `headless` skips the Qt app (for a box without Qt); `release` for a real build.
+  CI configures with `-DWL_WERROR=ON`, so a new warning fails the build.
+- `ci/tidy.sh build/dev` runs clang-tidy (`.clang-tidy`) over the sources and
+  fails on any finding.
+- CI (`.github/workflows/ci.yml`) runs `build (clang|gcc)`, `sanitize
+  (asan|tsan)` and `tidy` on self-hosted runners built from `ci/runner/`
+  (see its README). Jobs skip fork PRs, and any new job must keep that `if:`.
 - Run it: `WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog.app/Contents/MacOS/WorkoutLog`
   on macOS, `build/dev/app/WorkoutLog` on Linux.
 - Generate session stubs from a cycle template:
@@ -38,7 +45,8 @@ One C++20 CMake project:
 - Normalise session files after hand-editing them:
   `build/dev/tools/wl_fmt` (or `--check` to fail without writing).
 
-Buildable and verifiable on this machine: macOS. Linux builds in CI.
+Buildable and verifiable on this machine: macOS. Linux builds in CI, in the
+`ci/runner` image (Ubuntu 24.04: clang 18, GCC 13, Qt 6.4).
 
 ## Data-file integrity
 

@@ -1,0 +1,24 @@
+# Checks that find bugs and waste, not checks that restyle. Each disabled one
+# below fires on an idiom this code uses on purpose.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  clang-analyzer-*,
+  performance-*,
+  -performance-enum-size,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  -modernize-avoid-c-arrays,
+  -modernize-use-designated-initializers,
+  misc-unused-using-decls,
+  misc-redundant-expression
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '/(core|storage|tools|app)/(src|include)/'
+
+CheckOptions:
+  - key: bugprone-empty-catch.IgnoreCatchWithKeywords
+    value: 'skipped;warn, never block'
