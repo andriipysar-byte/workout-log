@@ -21,17 +21,18 @@ system that answers real programming questions instead of just storing rows.
 4. **The format tolerates history.** The importer must read the real notation I
    used over years, which drifted. See `docs/03-log-notation.md`.
 
-Principle 3 has now been cashed in twice. The app began as SwiftUI over a Swift
-core; reaching Linux and Windows added a second UI (Dear ImGui over SDL3) over a
-second domain core, in C++ — two implementations of one set of rules, the exact
-drift ADR-004 exists to prevent. Flutter over a Dart core replaced all of it, and
-Rust over a Rust core has now replaced that. Each time the domain was ported
-against its own test suite and the old tree was deleted rather than kept, which
-is the only version of this that stays honest.
+Principle 3 has now been cashed in, and the bill came with it. The app began as
+SwiftUI over a Swift core; reaching Linux and Windows added a second UI (Dear
+ImGui over SDL3) over a second domain core, in C++. That is two implementations
+of one set of rules — the exact drift ADR-004 exists to prevent, arrived at by
+honouring ADR-004's letter in each tree separately. Flutter over a Dart core
+replaced all of it, then a Rust workspace with a Dioxus webview UI replaced
+that. The current stack is C++ with Qt Widgets — core, tools and UI moved
+together, and each earlier tree was deleted rather than kept beside the next.
 
 The files never moved: `data/`, `exercises.json` and `cycles.json` were read by
 each implementation unmodified. The portable asset was the format, exactly as
-ADR-001 claimed. The code was not — it was re-expressed three times.
+ADR-001 claimed. The code was not — it was re-expressed five times.
 
 ## Repository layout
 
@@ -41,10 +42,10 @@ exercises.json            exercise catalogue: canonical names, aliases, muscles
 cycles.json               reusable cycle definitions (session templates)
 *.schema.json             JSON Schema for a session file and for cycles
 docs/                     design docs and decisions
-assets/muscle-map.svg     the anatomical map the analytics colour in
-crates/workout-log-core/  the domain core — pure Rust, no I/O, no UI
-crates/workout-log-app/   the app — Dioxus + Rust/UI, desktop and web
-crates/workout-log-mcp/   an MCP server over the same core
+core/                     the domain core — C++20, no Qt, no filesystem
+storage/                  the session folder on disk
+tools/                    wl_fmt, wl_gen_cycle
+app/                      the app — Qt 6 Widgets, macOS and Linux
 ```
 
 ## Documents
@@ -61,10 +62,13 @@ crates/workout-log-mcp/   an MCP server over the same core
 ## Running it
 
 ```
-cargo test -p workout-log-core -p workout-log-mcp      # the domain + server suites
-cd crates/workout-log-app
-WORKOUTLOG_DATA=../../data dx serve --platform desktop # the app
+cmake --preset dev && cmake --build --preset dev && ctest --preset dev
+WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog.app/Contents/MacOS/WorkoutLog   # macOS
+WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog                                 # Linux
 ```
+
+Needs CMake, Ninja, a C++20 compiler and Qt 6.4+ with Svg. The `headless`
+preset builds the core and tools without Qt.
 
 ## The three screens
 
@@ -75,20 +79,6 @@ WORKOUTLOG_DATA=../../data dx serve --platform desktop # the app
 - **Plan** — what is *going* to happen: create, clone and edit cycles in
   `cycles.json`, add workouts following the A1/A2 convention, pick exercises
   from the catalogue or add new ones, and see each planned day's muscle map.
-
-## Talking to it
-
-`mcp/` serves the log over MCP, so an assistant can enter a session, fill a slot
-from the paper notation, and ask the archive the questions in
-`docs/04-analytics.md` — rep-band distribution, pattern frequency, top set
-against back-off volume, density, metcon splits. It is a surface over
-`workout-log-core`, not a second implementation of it (ADR-008); it writes the
-same canonical JSON the app writes, and refuses anything that would not parse
-back. The repo ships a `.mcp.json`, so a client started here picks it up:
-
-```
-cargo test -p workout-log-mcp
-```
 
 ## Current phase
 

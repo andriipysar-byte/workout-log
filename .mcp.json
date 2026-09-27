@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "workout-log": {
-      "command": "cargo",
-      "args": ["run", "--quiet", "--release", "-p", "workout-log-mcp", "--"],
-      "env": {}
-    }
-  }
-}

@@ -1,0 +1,8 @@
+services:
+  runner:
+    build: .
+    image: workout-log-ci
+    restart: unless-stopped
+    env_file: .env
+    deploy:
+      replicas: ${RUNNERS:-3}

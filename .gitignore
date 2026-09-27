@@ -1,26 +1,68 @@
-# macOS
+# General
 .DS_Store
 .localized
+__MACOSX/
+.AppleDouble
+.LSOverride
+Icon[
+]
+
+# Resource forks
 ._*
-.Spotlight-V100
+
+# Files and directories that might appear in the root of a volume
 .DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
 .TemporaryItems
 .Trashes
-.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.com.apple.timemachine.supported
+.PKInstallSandboxManager
+.PKInstallSandboxManager-SystemSoftware
+.hotfiles.btree
+.vol
+.file
+.disk_label*
+lost+found
+.HFS+ Private Directory Data[
+]
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
 .apdisk
 
-# Rust
-/target/
-**/target/
+# Mac OS 6 to 9
+Desktop DB
+Desktop DF
+TheFindByContentFolder
+TheVolumeSettingsFolder
+.FBCIndex
+.FBCSemaphoreFile
+.FBCLockFolder
 
-# Dioxus build output (`dx serve` / `dx build`)
-/dist/
-**/dist/
-.dioxus/
+# Quota system
+.quota.group
+.quota.user
+.quota.ops.group
+.quota.ops.user
 
-# Node is only the Tailwind CLI. The generated assets/tailwind.css is committed
-# on purpose, so a plain `cargo build` needs no Node at all.
-node_modules/
+# TimeMachine
+Backups.backupdb
+.MobileBackups
+.MobileBackups.trash
+MobileBackups.trash
+tmbootpicker.efi
+
+# CMake build trees (one per preset)
+build/
 
 # Generated heatmap exports
 out/
+
+# CI runner secrets
+ci/runner/.env

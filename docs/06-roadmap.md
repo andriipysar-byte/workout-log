@@ -62,28 +62,24 @@ against.
 - [ ] Postponed-session overlay against load
 - [ ] Deload/retest anchors on every chart
 
-## Phase 3 — The platforms Dioxus reaches
+## Phase 3 — Platforms
 
-One Rust codebase reaches desktop, web, iOS and Android. The core and the MCP
-server build anywhere Rust does; the app needs a webview per platform.
+The app is Qt Widgets over the C++ core, for the desktop (ADR-005, 2026-09-27 amendment).
 
-- [x] Web — compiles for `wasm32`; holds a working copy and imports/exports (ADR-007)
-- [ ] Linux — written, but not yet compiled here: needs the WebKitGTK headers
-      (`libgtk-3-dev libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev
-      librsvg2-dev`)
-- [ ] macOS and Windows — need those hosts; no code change expected, the webview
-      is WKWebView and WebView2 respectively
-- [ ] iOS and Android — capture at the gym: rest timer, metcon round splits,
-      heart rate, and previous performance on this lift visible while lifting
+- [x] macOS — builds and runs against the real `data/`
+- [ ] Linux — builds and tests in CI; not yet run on a Linux desktop
+- [ ] iOS capture at the gym (rest timer, metcon splits, heart rate, previous
+      performance on this lift) — left with the Flutter and Rust apps; would return as a
+      separate surface over the same core and files
 - [ ] Portable folder sync to replace iCloud Drive (ADR-003 makes this a
       configuration choice, not a code change)
+- [ ] MCP server over `wlcore` (ADR-008), deleted with the Dart core
 
 ## Phase 4 — Things the current UI cannot do
 
-- [ ] Per-muscle hit-testing and tooltips on the muscle map. The Flutter version
-      would have needed the SVG parsed into paths and painted by hand; in a
-      webview the map is already DOM, so this is now a small change rather than a
-      deferred one.
+- [ ] Per-muscle hit-testing and tooltips on the muscle map. QtSvg can render
+      one element by id, so this needs ids on the template's paths and a hover
+      pass over them — deferred on purpose.
 - [ ] Block and set editing beyond the notation field
 - [ ] Metcon round and split entry
 
@@ -91,7 +87,7 @@ server build anywhere Rust does; the app needs a webview per platform.
 
 The critical path is **the format plus the migrated history**, not any app. Once
 the archive is in the format, everything else is a view over it — and the archive
-is the asset that survives every framework decision I might later regret. Two
-ports have now tested that claim — Swift/C++ to Dart, and Dart to Rust. Each time
-the files were read unchanged by a new implementation in a different language, and
-the Rust port regenerates the planned stubs byte for byte. They survive.
+is the asset that survives every framework decision I might later regret. Three
+ports have now tested that claim — Swift/C++ to Dart, Dart to Rust, and then to
+C++ and Qt. Each time the files were read unchanged by a new implementation in a
+different language; the C++ port re-encodes every one of them byte for byte.
