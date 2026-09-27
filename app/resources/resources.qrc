@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>muscle-map.svg</file>
+    </qresource>
+</RCC>
