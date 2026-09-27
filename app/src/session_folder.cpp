@@ -1,5 +1,6 @@
 #include "session_folder.hpp"
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "workoutlog/directory_storage.hpp"
@@ -19,7 +20,26 @@ std::optional<std::string> FileReferenceStore::read(const std::string& name) con
 }
 
 void FileReferenceStore::write(const std::string& name, const std::string& contents) {
-    wl::write_file_atomically(directory_ / name, contents);
+    fs::path file = directory_ / name;
+    fs::create_directories(file.parent_path());
+    wl::write_file_atomically(file, contents);
+}
+
+std::vector<std::string> FileReferenceStore::list(const std::string& directory) const {
+    std::vector<std::string> out;
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(directory_ / directory, ec))
+        if (entry.path().extension() == ".json") out.push_back(directory + "/" + entry.path().filename().string());
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+std::vector<std::string> MemoryReferenceStore::list(const std::string& directory) const {
+    std::vector<std::string> out;
+    std::string prefix = directory + "/";
+    for (const auto& [name, contents] : files_)
+        if (name.starts_with(prefix) && name.ends_with(".json")) out.push_back(name);
+    return out;
 }
 
 std::optional<std::string> MemoryReferenceStore::read(const std::string& name) const {

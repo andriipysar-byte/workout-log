@@ -18,6 +18,7 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1, "description": "Versions share an id; an absent version is 1. by_id picks the latest." },
         "training_days": {
           "type": "array",
           "items": { "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }

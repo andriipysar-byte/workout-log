@@ -8,6 +8,7 @@
 class AppModel;
 class CycleView;
 class PlanView;
+class RunView;
 class SessionEditor;
 class QAction;
 class QButtonGroup;
@@ -19,7 +20,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    enum class Tab { list, cycle, plan };
+    enum class Tab { list, cycle, plan, run };
 
     explicit MainWindow(AppModel& model, QWidget* parent = nullptr);
 
@@ -28,6 +29,7 @@ public:
     QListWidget* session_list() const { return list_; }
     SessionEditor* editor() const { return editor_; }
     PlanView* plan_view() const { return plan_; }
+    RunView* run_view() const { return run_; }
     QAction* save_action() const { return save_; }
     QAction* delete_action() const { return delete_; }
 
@@ -51,6 +53,7 @@ private:
     unsigned editor_generation_ = 0;
     CycleView* cycle_;
     PlanView* plan_;
+    RunView* run_;
     QLabel* status_;
     QAction* save_;
     QAction* delete_;

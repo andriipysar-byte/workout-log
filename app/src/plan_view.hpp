@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+#include <cstdint>
 #include <optional>
 #include <set>
 #include <string>
@@ -29,6 +30,7 @@ public:
     QPushButton* save_button() const { return save_; }
     QPushButton* clone_button() const { return clone_; }
     QPushButton* edit_button() const { return edit_; }
+    QPushButton* version_button() const { return version_; }
 
 private:
     void select(std::optional<size_t> index);
@@ -39,10 +41,12 @@ private:
 
     AppModel& model_;
     std::string selected_id_;
+    std::int64_t selected_version_ = 1;
     QComboBox* cycle_box_;
     QPushButton* new_;
     QPushButton* clone_;
     QPushButton* edit_;
+    QPushButton* version_;
     QPushButton* save_;
     QLabel* lock_;
     QVBoxLayout* detail_;

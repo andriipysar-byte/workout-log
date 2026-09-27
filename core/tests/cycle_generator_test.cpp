@@ -11,9 +11,9 @@ using namespace std::chrono;
 
 namespace {
 
-Cycle hybrid8() {
+Cycle hybrid8(std::int64_t version) {
     auto catalogue = fixtures::cycles();
-    const Cycle* cycle = catalogue.by_id("hybrid-8");
+    const Cycle* cycle = catalogue.by_id("hybrid-8", version);
     REQUIRE(cycle);
     return *cycle;
 }
@@ -48,17 +48,28 @@ TEST_CASE("a single session may opt out of the weekday check") {
     CHECK(session.date == "2026-07-21");
 }
 
-TEST_CASE("hybrid-8 expands onto the dates already in data/") {
+TEST_CASE("hybrid-8 v1 expands onto the dates already in data/") {
     std::vector<std::string> ids;
-    for (const auto& s : generate_cycle(hybrid8())) ids.push_back(SessionStore::id_for(s));
+    for (const auto& s : generate_cycle(hybrid8(1))) ids.push_back(SessionStore::id_for(s));
     CHECK(ids == std::vector<std::string>{"2026-07-21_A1.json", "2026-07-23_A2.json", "2026-07-26_B1.json",
                                           "2026-07-28_B2.json", "2026-07-30_C1.json", "2026-08-02_C2.json",
                                           "2026-08-04_D1.json", "2026-08-06_D2.json"});
 }
 
+TEST_CASE("hybrid-8 v2 puts both squats on a Sunday and never follows a workout with its own letter") {
+    auto sessions = generate_cycle(hybrid8(2));
+    std::vector<std::string> ids;
+    for (const auto& s : sessions) ids.push_back(SessionStore::id_for(s));
+    CHECK(ids == std::vector<std::string>{"2026-09-29_A1.json", "2026-10-01_B2.json", "2026-10-04_A2.json",
+                                          "2026-10-06_B1.json", "2026-10-08_D2.json", "2026-10-11_C2.json",
+                                          "2026-10-13_D1.json", "2026-10-15_C1.json"});
+    for (size_t i = 1; i < sessions.size(); ++i)
+        CHECK_MESSAGE(sessions[i].cycle_day[0] != sessions[i - 1].cycle_day[0], sessions[i].cycle_day);
+}
+
 TEST_CASE("generated stubs are schema-shaped and re-encode unchanged") {
     const std::regex iso(R"(^\d{4}-\d{2}-\d{2}$)");
-    for (const auto& session : generate_cycle(hybrid8())) {
+    for (const auto& session : generate_cycle(hybrid8(2))) {
         CHECK(session.kind == Kind::training);
         CHECK(std::regex_search(session.date, iso));
         CHECK_FALSE(session.blocks.empty());
@@ -67,7 +78,7 @@ TEST_CASE("generated stubs are schema-shaped and re-encode unchanged") {
 }
 
 TEST_CASE("planning-only fields never reach the output") {
-    for (const auto& session : generate_cycle(hybrid8())) {
+    for (const auto& session : generate_cycle(hybrid8(2))) {
         auto encoded = encode_session(session);
         CHECK(encoded.find("sets_reps") == std::string::npos);
         CHECK(encoded.find("\"role\"") == std::string::npos);
@@ -109,7 +120,7 @@ TEST_CASE("an unknown template block type is rejected") {
 }
 
 TEST_CASE("generating twice is deterministic") {
-    auto cycle = hybrid8();
+    auto cycle = hybrid8(2);
     std::vector<std::string> first, second;
     for (const auto& s : generate_cycle(cycle)) first.push_back(encode_session(s));
     for (const auto& s : generate_cycle(cycle)) second.push_back(encode_session(s));

@@ -5,17 +5,20 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "workoutlog/session_store.hpp"
 
-// exercises.json and cycles.json live one level above the session folder —
-// the repository layout, `<repo>/data/*.json` beside `<repo>/*.json`.
+// exercises.json, cycles.json and prescriptions/ live one level above the
+// session folder — the repository layout, `<repo>/data/*.json` beside `<repo>/*.json`.
 class ReferenceStore {
 public:
     virtual ~ReferenceStore() = default;
     virtual bool can_write() const = 0;
     virtual std::optional<std::string> read(const std::string& name) const = 0;
     virtual void write(const std::string& name, const std::string& contents) = 0;
+    // `<directory>/<file>.json` names, sorted; empty when the directory is missing.
+    virtual std::vector<std::string> list(const std::string& directory) const = 0;
     virtual std::string label() const = 0;
 };
 
@@ -25,6 +28,7 @@ public:
     bool can_write() const override;
     std::optional<std::string> read(const std::string& name) const override;
     void write(const std::string& name, const std::string& contents) override;
+    std::vector<std::string> list(const std::string& directory) const override;
     std::string label() const override { return directory_.string(); }
 
 private:
@@ -38,6 +42,7 @@ public:
     bool can_write() const override { return writable_; }
     std::optional<std::string> read(const std::string& name) const override;
     void write(const std::string& name, const std::string& contents) override { files_[name] = contents; }
+    std::vector<std::string> list(const std::string& directory) const override;
     std::string label() const override { return "in-memory"; }
     const std::map<std::string, std::string>& files() const { return files_; }
 

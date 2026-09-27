@@ -13,6 +13,11 @@
 namespace fs = std::filesystem;
 using namespace wl;
 
+std::string cycle_label(const Cycle& cycle) {
+    if (!cycle.version) return cycle.name;
+    return cycle.name + " · v" + std::to_string(*cycle.version);
+}
+
 AppModel::AppModel(QObject* parent) : QObject(parent) {}
 
 void AppModel::set_status(std::string status) {
@@ -76,6 +81,21 @@ void AppModel::load_reference_files() {
         catalogue_.reset();
         set_status(std::string("Catalogue load failed: ") + e.what());
     }
+    load_prescriptions();
+}
+
+void AppModel::load_prescriptions() {
+    prescriptions_.clear();
+    unsaved_runs_.clear();
+    std::vector<std::string> failed;
+    for (const auto& name : folder_.references->list(std::string(kPrescriptionDirectory))) {
+        try {
+            if (auto text = folder_.references->read(name)) prescriptions_.push_back(decode_prescription(*text));
+        } catch (const std::exception& e) {
+            failed.push_back(name + ": " + e.what());
+        }
+    }
+    if (!failed.empty()) set_status("Could not read " + failed.front());
 }
 
 void AppModel::refresh(bool from_disk) {
@@ -349,9 +369,20 @@ size_t AppModel::clone_cycle(size_t source, const std::string& id, const std::st
     Cycle clone = Cycle::from_json(cycles_.cycles.at(source).to_json());
     clone.id = id;
     clone.name = name;
+    clone.version.reset();
     std::string source_name = cycles_.cycles[source].name;
     cycles_.cycles.push_back(std::move(clone));
     set_status("Cloned \"" + source_name + "\" as \"" + name + "\"");
+    emit changed();
+    return cycles_.cycles.size() - 1;
+}
+
+size_t AppModel::new_version(size_t source) {
+    Cycle next = Cycle::from_json(cycles_.cycles.at(source).to_json());
+    next.version = cycles_.next_version(next.id);
+    std::string label = cycle_label(next);
+    cycles_.cycles.push_back(std::move(next));
+    set_status("Started " + label);
     emit changed();
     return cycles_.cycles.size() - 1;
 }
@@ -441,6 +472,82 @@ void AppModel::save_cycles() {
         set_status(std::string("Save failed: ") + e.what());
     }
     emit changed();
+}
+
+std::string AppModel::run_label(const Prescription& run) const {
+    const Cycle* cycle = cycles_.by_id(run.cycle_id, run.cycle_version);
+    std::string name = cycle ? cycle_label(*cycle) : run.cycle_id + " · v" + std::to_string(run.cycle_version);
+    return name + " — from " + run.start_date;
+}
+
+std::optional<size_t> AppModel::start_run(size_t cycle, Date start) {
+    try {
+        Prescription run = prescribe(cycles_.cycles.at(cycle), start);
+        for (size_t i = 0; i < prescriptions_.size(); ++i)
+            if (prescriptions_[i].file_name() == run.file_name()) {
+                set_status(run.file_name() + " already exists");
+                emit changed();
+                return i;
+            }
+        folder_.references->write(run.file_name(), encode_prescription(run));
+        prescriptions_.push_back(std::move(run));
+        set_status("Started " + prescriptions_.back().file_name());
+        emit changed();
+        return prescriptions_.size() - 1;
+    } catch (const std::exception& e) {
+        set_status(std::string("Could not start the run: ") + e.what());
+        emit changed();
+        return std::nullopt;
+    }
+}
+
+void AppModel::run_edited(size_t run) {
+    unsaved_runs_.insert(prescriptions_.at(run).file_name());
+}
+
+bool AppModel::run_unsaved(size_t run) const {
+    return unsaved_runs_.contains(prescriptions_.at(run).file_name());
+}
+
+void AppModel::save_run(size_t run) {
+    const Prescription& p = prescriptions_.at(run);
+    try {
+        folder_.references->write(p.file_name(), encode_prescription(p));
+        unsaved_runs_.erase(p.file_name());
+        set_status("Saved " + p.file_name());
+    } catch (const std::exception& e) {
+        set_status(std::string("Save failed: ") + e.what());
+    }
+    emit changed();
+}
+
+std::string AppModel::day_file(size_t run, size_t day) const {
+    return SessionStore::id_for(session_for(prescriptions_.at(run).days.at(day)));
+}
+
+void AppModel::generate_days(size_t run, const std::vector<size_t>& days) {
+    if (run_unsaved(run)) save_run(run);
+    if (run_unsaved(run)) return;
+    std::vector<std::string> written;
+    try {
+        for (size_t day : days) {
+            std::string id = store_->save(session_for(prescriptions_.at(run).days.at(day)));
+            cache_.erase(id);
+            written.push_back(id);
+        }
+    } catch (const std::exception& e) {
+        set_status(std::string("Generate failed: ") + e.what());
+        refresh();
+        return;
+    }
+    if (loaded_id_ && std::find(written.begin(), written.end(), *loaded_id_) != written.end()) {
+        session_ = store_->load(*loaded_id_);
+        ++session_generation_;
+        day_map_.reset();
+    }
+    set_status(written.size() == 1 ? "Generated " + written.front()
+                                   : "Generated " + std::to_string(written.size()) + " sessions");
+    refresh();
 }
 
 void AppModel::add_exercise(Exercise exercise) {

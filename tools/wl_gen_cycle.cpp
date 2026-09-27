@@ -1,9 +1,11 @@
 // Generates dated session-stub files from a cycle in cycles.json.
 //
-// Usage: wl_gen_cycle [--cycle <id>] [--out <dir>] [--repo <dir>] [--force]
+// Usage: wl_gen_cycle [--cycle <id>] [--version <n>] [--out <dir>] [--repo <dir>] [--force]
 
 #include <filesystem>
+#include <cstdint>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include "workoutlog/cycle.hpp"
@@ -15,7 +17,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-constexpr const char* kUsage = "usage: wl_gen_cycle [--cycle <id>] [--out <dir>] [--repo <dir>] [--force]";
+constexpr const char* kUsage = "usage: wl_gen_cycle [--cycle <id>] [--version <n>] [--out <dir>] [--repo <dir>] [--force]";
 
 [[noreturn]] void fail(const std::string& message) {
     std::cerr << "error: " << message << "\n";
@@ -26,6 +28,7 @@ constexpr const char* kUsage = "usage: wl_gen_cycle [--cycle <id>] [--out <dir>]
 
 int main(int argc, char** argv) {
     std::string cycle_id = "hybrid-8";
+    std::optional<std::int64_t> version;
     std::string out_dir_name = "data";
     fs::path repo = wl::find_repo_root().value_or(fs::current_path());
     bool force = false;
@@ -43,6 +46,13 @@ int main(int argc, char** argv) {
             return 0;
         } else if (arg == "--cycle") {
             cycle_id = next(arg);
+        } else if (arg == "--version") {
+            std::string value = next(arg);
+            try {
+                version = std::stoll(value);
+            } catch (const std::exception&) {
+                fail("--version expects a number, got \"" + value + "\"");
+            }
         } else if (arg == "--out") {
             out_dir_name = next(arg);
         } else if (arg == "--repo") {
@@ -57,8 +67,11 @@ int main(int argc, char** argv) {
 
     try {
         auto catalogue = wl::decode_cycles(wl::read_file(cycles_file));
-        const wl::Cycle* cycle = catalogue.by_id(cycle_id);
-        if (!cycle) fail("cycle \"" + cycle_id + "\" not found in " + cycles_file.string());
+        const wl::Cycle* cycle = version ? catalogue.by_id(cycle_id, *version) : catalogue.by_id(cycle_id);
+        if (!cycle) {
+            std::string wanted = cycle_id + (version ? " v" + std::to_string(*version) : "");
+            fail("cycle \"" + wanted + "\" not found in " + cycles_file.string());
+        }
 
         fs::path out_dir = repo / out_dir_name;
         fs::create_directories(out_dir);

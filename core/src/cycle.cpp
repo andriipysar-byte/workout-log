@@ -1,5 +1,7 @@
 #include "workoutlog/cycle.hpp"
 
+#include <utility>
+
 namespace wl {
 
 namespace {
@@ -88,10 +90,11 @@ Cycle Cycle::from_json(const Json& json) {
     Cycle c;
     c.id = req_string(json, "id");
     c.name = opt_string(json, "name").value_or(c.id);
+    c.version = opt_int(json, "version");
     c.training_days = string_list(json, "training_days");
     c.start_date = req_string(json, "start_date");
     for (const auto& s : req_array(json, "sessions")) c.sessions.push_back(CycleSession::from_json(s));
-    c.extras = unmodelled_keys(json, {"id", "name", "training_days", "start_date", "sessions"});
+    c.extras = unmodelled_keys(json, {"id", "name", "version", "training_days", "start_date", "sessions"});
     return c;
 }
 
@@ -99,6 +102,7 @@ Json Cycle::to_json() const {
     Json json = starting_from(extras);
     json["id"] = id;
     json["name"] = name;
+    put(json, "version", version);
     json["training_days"] = strings(training_days);
     json["start_date"] = start_date;
     Json list = Json::array();
@@ -108,15 +112,25 @@ Json Cycle::to_json() const {
 }
 
 const Cycle* CycleCatalogue::by_id(std::string_view id) const {
+    const Cycle* latest = nullptr;
     for (const auto& c : cycles)
-        if (c.id == id) return &c;
-    return nullptr;
+        if (c.id == id && (!latest || c.version_number() > latest->version_number())) latest = &c;
+    return latest;
 }
 
 Cycle* CycleCatalogue::by_id(std::string_view id) {
-    for (auto& c : cycles)
-        if (c.id == id) return &c;
+    return const_cast<Cycle*>(std::as_const(*this).by_id(id));
+}
+
+const Cycle* CycleCatalogue::by_id(std::string_view id, std::int64_t version) const {
+    for (const auto& c : cycles)
+        if (c.id == id && c.version_number() == version) return &c;
     return nullptr;
+}
+
+std::int64_t CycleCatalogue::next_version(std::string_view id) const {
+    const Cycle* latest = by_id(id);
+    return latest ? latest->version_number() + 1 : 1;
 }
 
 CycleCatalogue CycleCatalogue::from_json(const Json& json) {

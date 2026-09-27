@@ -18,6 +18,7 @@
 #include "cycle_view.hpp"
 #include "new_session_dialog.hpp"
 #include "plan_view.hpp"
+#include "run_view.hpp"
 #include "session_editor.hpp"
 #include "theme.hpp"
 #include "workoutlog/directory_storage.hpp"
@@ -60,7 +61,7 @@ MainWindow::MainWindow(AppModel& model, QWidget* parent) : QMainWindow(parent), 
     auto* segments = new QHBoxLayout;
     segments->setSpacing(0);
     int id = 0;
-    for (const char* label : {"List", "Cycle", "Plan"}) {
+    for (const char* label : {"List", "Cycle", "Plan", "Run"}) {
         auto* b = new QPushButton(label);
         b->setCheckable(true);
         tabs_->addButton(b, id++);
@@ -86,9 +87,11 @@ MainWindow::MainWindow(AppModel& model, QWidget* parent) : QMainWindow(parent), 
     static_cast<QLabel*>(placeholder_)->setAlignment(Qt::AlignCenter);
     cycle_ = new CycleView(model_);
     plan_ = new PlanView(model_);
+    run_ = new RunView(model_);
     detail_->addWidget(placeholder_);
     detail_->addWidget(cycle_);
     detail_->addWidget(plan_);
+    detail_->addWidget(run_);
     splitter->addWidget(detail_);
     splitter->setStretchFactor(1, 1);
     setCentralWidget(splitter);
@@ -154,13 +157,18 @@ void MainWindow::sync() {
             plan_->refresh();
             detail_->setCurrentWidget(plan_);
             break;
+        case Tab::run:
+            run_->refresh();
+            detail_->setCurrentWidget(run_);
+            break;
     }
 
-    bool not_plan = tab_ != Tab::plan;
+    bool not_plan = tab_ != Tab::plan && tab_ != Tab::run;
     save_->setEnabled(session && not_plan);
     delete_->setEnabled(model_.selection().has_value() && not_plan);
     status_->setText(qs(model_.status().empty() ? model_.folder_label() : model_.status()));
-    setWindowTitle(tab_ == Tab::list ? "Sessions — WorkoutLog" : tab_ == Tab::cycle ? "Cycle — WorkoutLog" : "Plan — WorkoutLog");
+    const char* titles[] = {"Sessions — WorkoutLog", "Cycle — WorkoutLog", "Plan — WorkoutLog", "Run — WorkoutLog"};
+    setWindowTitle(titles[static_cast<int>(tab_)]);
 }
 
 void MainWindow::new_session() {

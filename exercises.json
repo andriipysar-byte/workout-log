@@ -318,6 +318,15 @@
       "category": "speed",
       "primary_muscles": ["chest", "triceps"],
       "secondary_muscles": ["front_delts", "abs"]
+    },
+    {
+      "name": "скі-ерг",
+      "aliases": ["лижний тренажер", "ski erg"],
+      "pattern": "pull",
+      "modality": "machine",
+      "category": "longevity",
+      "primary_muscles": ["lats", "triceps"],
+      "secondary_muscles": ["abs", "rear_delts", "hip_flexors"]
     }
   ]
 }

@@ -21,6 +21,8 @@ One C++20 CMake project:
 - `tools/` — `wl_fmt` and `wl_gen_cycle`.
 - `app/` — the Qt 6 Widgets app. `AppModel` holds state and calls the core;
   widgets hold no domain rules.
+- `prescriptions/` — one file per run of a cycle (reps, rounds, weights per
+  day), between `cycles.json` and the generated sessions in `data/`.
 
 ## Build & verify
 
@@ -41,7 +43,8 @@ One C++20 CMake project:
 - Run it: `WORKOUTLOG_DATA=$PWD/data build/dev/app/WorkoutLog.app/Contents/MacOS/WorkoutLog`
   on macOS, `build/dev/app/WorkoutLog` on Linux.
 - Generate session stubs from a cycle template:
-  `build/dev/tools/wl_gen_cycle [--cycle <id>] [--force]`.
+  `build/dev/tools/wl_gen_cycle [--cycle <id>] [--version <n>] [--force]`
+  (the latest version unless `--version` says otherwise).
 - Normalise session files after hand-editing them:
   `build/dev/tools/wl_fmt` (or `--check` to fail without writing).
 

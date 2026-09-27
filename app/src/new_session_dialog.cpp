@@ -29,7 +29,7 @@ NewSessionDialog::NewSessionDialog(AppModel& model, QWidget* parent, Confirm con
     auto* form = new QFormLayout;
     if (!model_.cycles().empty()) {
         cycle_ = new QComboBox;
-        for (const auto& c : model_.cycles()) cycle_->addItem(qs(c.name));
+        for (const auto& c : model_.cycles()) cycle_->addItem(qs(cycle_label(c)));
         template_ = new QComboBox;
         form->addRow("Cycle", cycle_);
         form->addRow("Template", template_);

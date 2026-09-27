@@ -152,17 +152,23 @@ TEST_CASE("the Cycle tab builds its table from the real archive") {
 TEST_CASE("the Plan tab shows the cycle, and a read-only folder disables every editing control") {
     MemoryApp writable;
     PlanView plan(writable.model);
-    CHECK(plan.cycle_box()->count() == 1);
+    CHECK(plan.cycle_box()->count() == 2);
+    CHECK(plan.cycle_box()->itemText(1) == "8-session hybrid cycle · v2");
     CHECK(plan.save_button()->isEnabled());
     auto labels = plan.findChildren<QLabel*>();
     CHECK(std::any_of(labels.begin(), labels.end(), [](QLabel* l) {
         return l->text() == "8 workouts · starts 2026-07-21 · Tue, Thu, Sun";
     }));
 
+    plan.version_button()->click();
+    CHECK(plan.cycle_box()->count() == 3);
+    CHECK(plan.cycle_box()->currentText() == "8-session hybrid cycle · v3");
+
     MemoryApp locked({}, helpers::real_references(), false);
     PlanView read_only(locked.model);
     CHECK_FALSE(locked.model.can_edit_plan());
-    for (auto* b : {read_only.new_button(), read_only.save_button(), read_only.clone_button(), read_only.edit_button()})
+    for (auto* b : {read_only.new_button(), read_only.save_button(), read_only.clone_button(), read_only.edit_button(),
+                    read_only.version_button()})
         CHECK_FALSE(b->isEnabled());
     auto buttons = read_only.findChildren<QPushButton*>();
     for (auto* b : buttons)

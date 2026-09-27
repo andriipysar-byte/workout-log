@@ -4,6 +4,7 @@
 
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include "workoutlog/cycle_planning.hpp"
 #include "workoutlog/models.hpp"
 #include "workoutlog/muscles.hpp"
+#include "workoutlog/prescription.hpp"
 #include "workoutlog/session_store.hpp"
 
 struct DayInfo {
@@ -31,6 +33,9 @@ struct CycleMatrix {
     std::vector<std::vector<wl::MuscleGroup>> groups;     // [exercise] primary groups
     bool empty() const { return days.empty(); }
 };
+
+// What a cycle picker shows: the name alone until the cycle has a second version.
+std::string cycle_label(const wl::Cycle& cycle);
 
 // All domain work is delegated to the core (ADR-004): no parsing, validation or
 // analytics here, only state and the calls that change it.
@@ -88,6 +93,8 @@ public:
     void cycle_edited();
     size_t create_cycle(const std::string& id, const std::string& name);
     size_t clone_cycle(size_t source, const std::string& id, const std::string& name);
+    // A copy of `source` under the same id, one past its id's latest version.
+    size_t new_version(size_t source);
     void delete_cycle(size_t index);
     bool cycle_id_taken(const std::string& id) const;
     size_t add_workout(size_t cycle, std::optional<wl::CycleDay> day = std::nullopt);
@@ -97,6 +104,23 @@ public:
     std::optional<wl::Date> planned_date(const wl::Cycle& cycle, size_t index) const;
     void save_cycles();
     void add_exercise(wl::Exercise exercise);
+
+    // Runs sit between planning and generation: a cycle version laid on dates,
+    // with reps, rounds and weights decided per day before any file is written.
+    std::vector<wl::Prescription>& prescriptions() { return prescriptions_; }
+    std::string run_label(const wl::Prescription& run) const;
+    // The existing run when one already starts there; null when the template
+    // does not fit the calendar from `start` (the reason is the status).
+    std::optional<size_t> start_run(size_t cycle, wl::Date start);
+    // Deliberately silent: `changed` rebuilds views, which would take focus
+    // from the field being typed in.
+    void run_edited(size_t run);
+    bool run_unsaved(size_t run) const;
+    void save_run(size_t run);
+    std::string day_file(size_t run, size_t day) const;
+    // Writes the day's session file, overwriting one already there; the run is
+    // saved first, so a generated day always matches its prescription on disk.
+    void generate_days(size_t run, const std::vector<size_t>& days);
 
     struct ImportFile {
         std::string name;
@@ -120,6 +144,7 @@ private:
 
     void load_template();
     void load_reference_files();
+    void load_prescriptions();
     FileInfo analyse(const std::string& id) const;
     void rebuild_derived();
     std::optional<std::string> weekday_for(const wl::Cycle& cycle, size_t index) const;
@@ -130,6 +155,8 @@ private:
     std::optional<wl::SessionStore> store_;
     std::optional<wl::Catalogue> catalogue_;
     wl::CycleCatalogue cycles_;
+    std::vector<wl::Prescription> prescriptions_;
+    std::set<std::string> unsaved_runs_;
     std::string map_template_;
 
     // Decoded sessions keyed by file id, so a refresh does work proportional to

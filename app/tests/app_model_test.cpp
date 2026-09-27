@@ -98,8 +98,9 @@ TEST_CASE("import rejects a malformed file at the door") {
 
 TEST_CASE("the plan loads the real cycles.json") {
     MemoryApp app;
-    REQUIRE(app.model.cycles().size() == 1);
+    REQUIRE(app.model.cycles().size() == 2);
     CHECK(app.model.cycles()[0].sessions.size() == 8);
+    CHECK(app.model.cycles()[1].sessions.size() == 8);
     CHECK(app.model.can_edit_plan());
     for (const auto& w : app.model.cycles()[0].sessions) CHECK_MESSAGE(app.model.plan_map_svg(w), w.cycle_day);
     CHECK(app.model.plan_dominant_group(app.model.cycles()[0].sessions.front()));
@@ -168,12 +169,25 @@ TEST_CASE("renaming a workout updates its code and its day type") {
 TEST_CASE("cloning copies the workouts without aliasing the original; ids clash case-insensitively") {
     MemoryApp app;
     size_t clone = app.model.clone_cycle(0, "copy", "Copy");
-    REQUIRE(app.model.cycles().size() == 2);
+    REQUIRE(app.model.cycles().size() == 3);
     app.model.cycles()[clone].sessions[0].cycle_day = "Z1";
     CHECK(app.model.cycles()[0].sessions[0].cycle_day != "Z1");
     CHECK(app.model.cycle_id_taken("hybrid-8"));
     CHECK(app.model.cycle_id_taken("  HYBRID-8 "));
     CHECK_FALSE(app.model.cycle_id_taken("something-else"));
+    CHECK_FALSE(app.model.cycles()[app.model.clone_cycle(1, "copy-2", "Copy")].version);
+}
+
+TEST_CASE("a new version copies the cycle under its id, and the earlier versions stay") {
+    MemoryApp app;
+    size_t v3 = app.model.new_version(1);
+    const Cycle& cycle = app.model.cycles()[v3];
+    CHECK(cycle.id == "hybrid-8");
+    CHECK(cycle.version == 3);
+    CHECK(cycle_label(cycle) == "8-session hybrid cycle · v3");
+    CHECK(app.model.status() == "Started 8-session hybrid cycle · v3");
+    CHECK(app.model.cycles()[0].version == 1);
+    CHECK(app.model.cycles()[1].to_json()["sessions"] == cycle.to_json()["sessions"]);
 }
 
 TEST_CASE("saving cycles.json keeps every hand-written key, and stubs still generate the same") {

@@ -14,7 +14,9 @@ sessions/
   2026-07-07_F2.json
   2026-08-10_F1.json
 exercises.json          catalogue: name → movement pattern, aliases
-cycles.json             cycle definitions (A1…F2), deloads, retests
+cycles.json             cycle definitions (A1…F2), deloads, retests; versions share an id
+prescriptions/
+  hybrid-8-v2_2026-09-29.json   one run of a cycle version: every day's reps, rounds, weights
 ```
 
 **Why one file per session:** append-only in practice, no merge conflicts, git
@@ -81,6 +83,25 @@ The atomic record. Polymorphic on how effort is measured:
 **Pattern is the load-bearing field.** Front squat, overhead squat and back squat
 are three *variants of one pattern*. Without this, conjugate rotation looks like
 a scatter of unrelated exercises with no progress — the exact failure P8 warns of.
+
+### Prescription (a run)
+
+The step between planning and generation. `cycles.json` stays weightless and
+reusable; a run lays one cycle version onto dates and holds the numbers decided
+for *that* run, so a calibration run and the progression run after it sit side
+by side.
+
+| Field | Type | Notes |
+|---|---|---|
+| `cycle` | string | cycle id |
+| `cycle_version` | int | the version the run was laid out from |
+| `start_date` | ISO date | first day of the run |
+| `days[]` | array | `cycle_day`, `date`, `title?`, `notes?`, `blocks[]` |
+
+`blocks[]` use the session block shape exactly: strength sets with `reps` and
+`weight_kg`, metcon `scheme` (rounds × reps) with per-movement `weight_kg` /
+`load`. Generating a day copies them into `data/<date>_<cycle_day>.json` as the
+session stub; the run is a snapshot, so later template edits do not reach it.
 
 ## Example session
 

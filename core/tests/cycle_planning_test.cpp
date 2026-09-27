@@ -70,9 +70,9 @@ TEST_CASE("next day: an empty cycle starts at A1") {
     CHECK(cycle_templates::next_day({}).code() == "A1");
 }
 
-TEST_CASE("next day: hybrid-8 ends at D2, so the next workout is E1") {
+TEST_CASE("next day: hybrid-8 v1 ends at D2, so the next workout is E1") {
     auto cycles = fixtures::cycles();
-    const Cycle* cycle = cycles.by_id("hybrid-8");
+    const Cycle* cycle = cycles.by_id("hybrid-8", 1);
     REQUIRE(cycle);
     std::vector<std::string> codes;
     for (const auto& s : cycle->sessions) codes.push_back(s.cycle_day);

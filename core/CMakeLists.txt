@@ -11,6 +11,7 @@ add_library(wlcore STATIC
     src/models.cpp
     src/muscles.cpp
     src/notation.cpp
+    src/prescription.cpp
     src/session_store.cpp
     src/utf8.cpp
     src/validation.cpp

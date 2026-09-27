@@ -72,12 +72,14 @@ PlanView::PlanView(AppModel& model, QWidget* parent) : QWidget(parent), model_(m
     new_ = new QPushButton("+ New cycle");
     clone_ = new QPushButton("Clone");
     edit_ = new QPushButton("Edit");
+    version_ = new QPushButton("New version");
+    version_->setToolTip("Copy this cycle as its next version; the current one stays as it is.");
     save_ = new QPushButton("Save cycles.json");
     lock_ = new QLabel("🔒");
     lock_->setToolTip("cycles.json is read-only: the folder above the session folder is missing.");
     bar->addWidget(new QLabel("Cycle"));
     bar->addWidget(cycle_box_);
-    for (auto* b : {new_, clone_, edit_, save_}) {
+    for (auto* b : {new_, clone_, edit_, version_, save_}) {
         b->setAutoDefault(false);
         bar->addWidget(b);
     }
@@ -103,6 +105,9 @@ PlanView::PlanView(AppModel& model, QWidget* parent) : QWidget(parent), model_(m
         CycleDialog dialog(model_, CycleDialog::Mode::edit, selected(), this);
         if (dialog.exec() == QDialog::Accepted) select(dialog.result_index());
     });
+    connect(version_, &QPushButton::clicked, this, [this] {
+        if (auto current = selected()) select(model_.new_version(*current));
+    });
     connect(save_, &QPushButton::clicked, this, [this] { model_.save_cycles(); });
     refresh();
 }
@@ -111,26 +116,32 @@ std::optional<size_t> PlanView::selected() const {
     const auto& cycles = model_.cycles();
     if (cycles.empty()) return std::nullopt;
     for (size_t i = 0; i < cycles.size(); ++i)
-        if (cycles[i].id == selected_id_) return i;
+        if (cycles[i].id == selected_id_ && cycles[i].version_number() == selected_version_) return i;
     return 0;
 }
 
 void PlanView::select(std::optional<size_t> index) {
-    selected_id_ = index && *index < model_.cycles().size() ? model_.cycles()[*index].id : "";
+    bool valid = index && *index < model_.cycles().size();
+    selected_id_ = valid ? model_.cycles()[*index].id : "";
+    selected_version_ = valid ? model_.cycles()[*index].version_number() : 1;
     refresh();
 }
 
 void PlanView::refresh() {
     auto current = selected();
-    if (current) selected_id_ = model_.cycles()[*current].id;
+    if (current) {
+        selected_id_ = model_.cycles()[*current].id;
+        selected_version_ = model_.cycles()[*current].version_number();
+    }
     cycle_box_->clear();
-    for (const auto& c : model_.cycles()) cycle_box_->addItem(qs(c.name));
+    for (const auto& c : model_.cycles()) cycle_box_->addItem(qs(cycle_label(c)));
     if (current) cycle_box_->setCurrentIndex(static_cast<int>(*current));
 
     bool editable = model_.can_edit_plan();
     new_->setEnabled(editable);
     clone_->setEnabled(editable && current.has_value());
     edit_->setEnabled(editable && current.has_value());
+    version_->setEnabled(editable && current.has_value());
     save_->setEnabled(editable);
     lock_->setVisible(!editable);
     rebuild_detail();
@@ -166,7 +177,7 @@ void PlanView::rebuild_detail() {
     auto* summary = card(0);
     auto* summary_row = new QHBoxLayout(summary);
     auto* text = new QVBoxLayout;
-    auto* title = new QLabel("<b>" + qs(cycle.name).toHtmlEscaped() + "</b>");
+    auto* title = new QLabel("<b>" + qs(cycle_label(cycle)).toHtmlEscaped() + "</b>");
     QStringList days;
     for (const auto& d : cycle.training_days) days << qs(d);
     text->addWidget(title);

@@ -136,6 +136,22 @@ TEST_CASE("cycles.json keeps role, cycle-level extras and its comment") {
     CHECK(catalogue.to_json()["$comment"] == *catalogue.comment);
 }
 
+TEST_CASE("cycle versions: by id means the latest, an absent version is the first and stays absent") {
+    auto catalogue = fixtures::cycles();
+    REQUIRE(catalogue.by_id("hybrid-8"));
+    CHECK(catalogue.by_id("hybrid-8")->version_number() == 2);
+    REQUIRE(catalogue.by_id("hybrid-8", 1));
+    CHECK(catalogue.by_id("hybrid-8", 1)->start_date == "2026-07-21");
+    CHECK_FALSE(catalogue.by_id("hybrid-8", 3));
+    CHECK(catalogue.next_version("hybrid-8") == 3);
+    CHECK(catalogue.next_version("unknown") == 1);
+
+    auto unversioned = Cycle::from_json(parse_json(R"({"id":"x","start_date":"2026-01-01","sessions":[]})"));
+    CHECK(unversioned.version_number() == 1);
+    CHECK_FALSE(unversioned.to_json().contains("version"));
+    CHECK_FALSE(unversioned.extras.contains("version"));
+}
+
 TEST_CASE("exercises.json round-trips without losing a single key") {
     std::string text = fixtures::read(fixtures::repo() / "exercises.json");
     CHECK(encode_file(Catalogue::from_json(parse_json(text)).to_json()) == encode_file(parse_json(text)));
