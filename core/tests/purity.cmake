@@ -1,0 +1,18 @@
+# ADR-004 as a build failure: the core may not reach for Qt, the filesystem or
+# streams. Storage, the tools, the MCP server and the app do that on its behalf.
+file(GLOB_RECURSE sources "${DIR}/include/*.hpp" "${DIR}/src/*.cpp")
+set(violations "")
+foreach(path IN LISTS sources)
+    file(STRINGS "${path}" hits REGEX "#include[ \t]*<(Q[A-Za-z]*|fstream|filesystem|iostream|cstdio>.*FILE)")
+    foreach(hit IN LISTS hits)
+        list(APPEND violations "${path}: ${hit}")
+    endforeach()
+    file(STRINGS "${path}" io REGEX "(fopen|std::cout|std::cerr|getenv)")
+    foreach(hit IN LISTS io)
+        list(APPEND violations "${path}: ${hit}")
+    endforeach()
+endforeach()
+if(violations)
+    list(JOIN violations "\n" text)
+    message(FATAL_ERROR "The core must stay free of platform I/O (ADR-004):\n${text}")
+endif()
