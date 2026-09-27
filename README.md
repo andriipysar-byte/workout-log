@@ -26,13 +26,13 @@ SwiftUI over a Swift core; reaching Linux and Windows added a second UI (Dear
 ImGui over SDL3) over a second domain core, in C++. That is two implementations
 of one set of rules — the exact drift ADR-004 exists to prevent, arrived at by
 honouring ADR-004's letter in each tree separately. Flutter over a Dart core
-replaced all of it; then, because Flutter's generated tree outweighed the app
-itself, the whole stack — core, tools and UI — moved together to C++ with Qt
-Widgets, and the Dart tree was deleted rather than kept beside it.
+replaced all of it, then a Rust workspace with a Dioxus webview UI replaced
+that. The current stack is C++ with Qt Widgets — core, tools and UI moved
+together, and each earlier tree was deleted rather than kept beside the next.
 
 The files never moved: `data/`, `exercises.json` and `cycles.json` were read by
 each implementation unmodified. The portable asset was the format, exactly as
-ADR-001 claimed. The code was not — it was re-expressed four times.
+ADR-001 claimed. The code was not — it was re-expressed five times.
 
 ## Repository layout
 

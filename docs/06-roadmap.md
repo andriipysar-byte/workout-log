@@ -64,12 +64,12 @@ against.
 
 ## Phase 3 — Platforms
 
-The app is Qt Widgets over the C++ core, for the desktop (ADR-005, amendment 2).
+The app is Qt Widgets over the C++ core, for the desktop (ADR-005, 2026-09-27 amendment).
 
 - [x] macOS — builds and runs against the real `data/`
 - [ ] Linux — builds and tests in CI; not yet run on a Linux desktop
 - [ ] iOS capture at the gym (rest timer, metcon splits, heart rate, previous
-      performance on this lift) — left with the Flutter app; would return as a
+      performance on this lift) — left with the Flutter and Rust apps; would return as a
       separate surface over the same core and files
 - [ ] Portable folder sync to replace iCloud Drive (ADR-003 makes this a
       configuration choice, not a code change)
@@ -87,7 +87,7 @@ The app is Qt Widgets over the C++ core, for the desktop (ADR-005, amendment 2).
 
 The critical path is **the format plus the migrated history**, not any app. Once
 the archive is in the format, everything else is a view over it — and the archive
-is the asset that survives every framework decision I might later regret. The
-Flutter port and then the C++ port were that claim being tested: the files were
-read unchanged by new implementations in different languages. They were — the
-C++ port re-encodes every one of them byte for byte.
+is the asset that survives every framework decision I might later regret. Three
+ports have now tested that claim — Swift/C++ to Dart, Dart to Rust, and then to
+C++ and Qt. Each time the files were read unchanged by a new implementation in a
+different language; the C++ port re-encodes every one of them byte for byte.
