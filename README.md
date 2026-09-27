@@ -21,12 +21,13 @@ system that answers real programming questions instead of just storing rows.
 4. **The format tolerates history.** The importer must read the real notation I
    used over years, which drifted. See `docs/03-log-notation.md`.
 
-Principle 3 has now been cashed in, and the bill came with it. The app began as
-SwiftUI over a Swift core; reaching Linux and Windows added a second UI (Dear
-ImGui over SDL3) over a second domain core, in C++. That is two implementations
-of one set of rules — the exact drift ADR-004 exists to prevent, arrived at by
-honouring ADR-004's letter in each tree separately. Flutter over a Dart core
-replaces all of it, and the Swift and C++ trees were deleted rather than kept.
+Principle 3 has now been cashed in twice. The app began as SwiftUI over a Swift
+core; reaching Linux and Windows added a second UI (Dear ImGui over SDL3) over a
+second domain core, in C++ — two implementations of one set of rules, the exact
+drift ADR-004 exists to prevent. Flutter over a Dart core replaced all of it, and
+Rust over a Rust core has now replaced that. Each time the domain was ported
+against its own test suite and the old tree was deleted rather than kept, which
+is the only version of this that stays honest.
 
 The files never moved: `data/`, `exercises.json` and `cycles.json` were read by
 each implementation unmodified. The portable asset was the format, exactly as
@@ -40,9 +41,10 @@ exercises.json            exercise catalogue: canonical names, aliases, muscles
 cycles.json               reusable cycle definitions (session templates)
 *.schema.json             JSON Schema for a session file and for cycles
 docs/                     design docs and decisions
-flutter/                  the app — Flutter, all six targets
-flutter/packages/workout_log_core/   the domain core — pure Dart, no Flutter
-mcp/                      an MCP server over the same core
+assets/muscle-map.svg     the anatomical map the analytics colour in
+crates/workout-log-core/  the domain core — pure Rust, no I/O, no UI
+crates/workout-log-app/   the app — Dioxus + Rust/UI, desktop and web
+crates/workout-log-mcp/   an MCP server over the same core
 ```
 
 ## Documents
@@ -59,10 +61,9 @@ mcp/                      an MCP server over the same core
 ## Running it
 
 ```
-cd flutter
-WORKOUTLOG_DATA=../data flutter run -d macos      # or -d chrome
-flutter analyze && flutter test
-cd packages/workout_log_core && dart test         # the domain suite
+cargo test -p workout-log-core -p workout-log-mcp      # the domain + server suites
+cd crates/workout-log-app
+WORKOUTLOG_DATA=../../data dx serve --platform desktop # the app
 ```
 
 ## The three screens
@@ -81,12 +82,12 @@ cd packages/workout_log_core && dart test         # the domain suite
 from the paper notation, and ask the archive the questions in
 `docs/04-analytics.md` — rep-band distribution, pattern frequency, top set
 against back-off volume, density, metcon splits. It is a surface over
-`workout_log_core`, not a second implementation of it (ADR-008); it writes the
+`workout-log-core`, not a second implementation of it (ADR-008); it writes the
 same canonical JSON the app writes, and refuses anything that would not parse
 back. The repo ships a `.mcp.json`, so a client started here picks it up:
 
 ```
-cd mcp && dart pub get && dart test
+cargo test -p workout-log-mcp
 ```
 
 ## Current phase

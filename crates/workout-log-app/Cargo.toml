@@ -1,0 +1,20 @@
+[package]
+name = "workout-log-app"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "WorkoutLog — Dioxus over the domain core."
+
+[features]
+default = ["desktop"]
+desktop = ["dioxus/desktop", "dep:rfd", "dep:dirs"]
+web = ["dioxus/web"]
+
+[dependencies]
+workout-log-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+dioxus = "0.7"
+rfd = { version = "0.15", optional = true }
+dirs = { version = "6", optional = true }

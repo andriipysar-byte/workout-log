@@ -1,84 +1,26 @@
-# General
+# macOS
 .DS_Store
 .localized
-__MACOSX/
-.AppleDouble
-.LSOverride
-Icon[]
-
-# Resource forks
 ._*
-
-# Files and directories that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
 .Spotlight-V100
+.DocumentRevisions-V100
 .TemporaryItems
 .Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-.com.apple.timemachine.supported
-.PKInstallSandboxManager
-.PKInstallSandboxManager-SystemSoftware
-.hotfiles.btree
-.vol
-.file
-.disk_label*
-lost+found
-.HFS+ Private Directory Data[]
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
+.fseventsd
 .apdisk
 
-# Mac OS 6 to 9
-Desktop DB
-Desktop DF
-TheFindByContentFolder
-TheVolumeSettingsFolder
-.FBCIndex
-.FBCSemaphoreFile
-.FBCLockFolder
+# Rust
+/target/
+**/target/
 
-# Quota system
-.quota.group
-.quota.user
-.quota.ops.group
-.quota.ops.user
+# Dioxus build output (`dx serve` / `dx build`)
+/dist/
+**/dist/
+.dioxus/
 
-# TimeMachine
-Backups.backupdb
-.MobileBackups
-.MobileBackups.trash
-MobileBackups.trash
-tmbootpicker.efi
-
-# Swift Package Manager build artifacts
-.build/
-app/.build/
-.swiftpm/
+# Node is only the Tailwind CLI. The generated assets/tailwind.css is committed
+# on purpose, so a plain `cargo build` needs no Node at all.
+node_modules/
 
 # Generated heatmap exports
 out/
-
-# Flutter / Dart
-# The generated flutter/**/.gitignore files cover most of this; these are
-# repeated here so the repo stays clean if one of them is regenerated away.
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-build/
-coverage/
-**/doc/api/
-**/Flutter/ephemeral/
-**/ios/Flutter/.last_build_id
-**/Pods/
-*.iml
-
-# Symbolication / obfuscation output
-app.*.symbols
-app.*.map.json

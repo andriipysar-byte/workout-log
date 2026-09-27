@@ -1,0 +1,8 @@
+[application]
+name = "workout-log"
+
+[web.app]
+title = "WorkoutLog"
+
+[bundle]
+identifier = "dev.andriipysar.workout-log"

@@ -62,29 +62,28 @@ against.
 - [ ] Postponed-session overlay against load
 - [ ] Deload/retest anchors on every chart
 
-## Phase 3 — The platforms that are configured but unproven
+## Phase 3 — The platforms Dioxus reaches
 
-One Flutter codebase reaches all six, but the tree only carries runners for four:
-macOS, iOS, Linux and web. Two are real today; the other two are scaffolded and
-analyzed but have never been built or run.
+One Rust codebase reaches desktop, web, iOS and Android. The core and the MCP
+server build anywhere Rust does; the app needs a webview per platform.
 
-- [x] macOS — builds and runs against the real `data/`
-- [x] Web — builds; holds a working copy and imports/exports (ADR-007)
-- [ ] iOS — capture at the gym: rest timer, metcon round splits, heart rate,
-      and previous performance on this lift visible while lifting
-- [ ] Android — same, once an SDK is installed; its runner was dropped as
-      untouched scaffolding and comes back with
-      `flutter create --platforms=android .`
-- [ ] Linux and Windows — need those hosts to build on, and Windows needs its
-      runner regenerated the same way
+- [x] Web — compiles for `wasm32`; holds a working copy and imports/exports (ADR-007)
+- [ ] Linux — written, but not yet compiled here: needs the WebKitGTK headers
+      (`libgtk-3-dev libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev
+      librsvg2-dev`)
+- [ ] macOS and Windows — need those hosts; no code change expected, the webview
+      is WKWebView and WebView2 respectively
+- [ ] iOS and Android — capture at the gym: rest timer, metcon round splits,
+      heart rate, and previous performance on this lift visible while lifting
 - [ ] Portable folder sync to replace iCloud Drive (ADR-003 makes this a
       configuration choice, not a code change)
 
 ## Phase 4 — Things the current UI cannot do
 
-- [ ] Per-muscle hit-testing and tooltips on the muscle map. This needs the SVG
-      parsed into paths and painted by a `CustomPainter` rather than handed to
-      `flutter_svg` as a string — a significant chunk of work, deferred on purpose.
+- [ ] Per-muscle hit-testing and tooltips on the muscle map. The Flutter version
+      would have needed the SVG parsed into paths and painted by hand; in a
+      webview the map is already DOM, so this is now a small change rather than a
+      deferred one.
 - [ ] Block and set editing beyond the notation field
 - [ ] Metcon round and split entry
 
@@ -92,6 +91,7 @@ analyzed but have never been built or run.
 
 The critical path is **the format plus the migrated history**, not any app. Once
 the archive is in the format, everything else is a view over it — and the archive
-is the asset that survives every framework decision I might later regret. The
-Flutter port was that claim being tested: the files were read unchanged by a new
-implementation in a different language. They were.
+is the asset that survives every framework decision I might later regret. Two
+ports have now tested that claim — Swift/C++ to Dart, and Dart to Rust. Each time
+the files were read unchanged by a new implementation in a different language, and
+the Rust port regenerates the planned stubs byte for byte. They survive.

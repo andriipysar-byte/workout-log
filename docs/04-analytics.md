@@ -79,16 +79,16 @@ straight after.
 
 ## Where these live
 
-The engine is pure Dart in `workout_log_core`, so every surface — the app, the
+The engine is pure Rust in `workout-log-core`, so every surface — the app, the
 MCP server — reads the same numbers (ADR-004, ADR-008):
 
-| Metric | Class |
+| Metric | Type |
 |---|---|
 | Tonnage, rep bands, top set vs back-off, density, metcon splits | `SessionMetrics` |
-| Best set per (variant, rep band), estimated 1RM, back-off volume | `ExerciseProgress` |
+| Best set per (variant, rep band), estimated 1RM, back-off volume | `progress::report` → `ProgressReport` |
 | Band distribution, pattern frequency, combined load, principle alerts | `TrainingReport` |
 | Muscle scores per session or cycle | `MuscleActivation` |
-| Schema and meaning checks over a session | `SessionValidator` |
+| Schema and meaning checks over a session | `validation::validate` |
 
 Still unbuilt: postponed/skipped sessions (nothing records them yet), and the
 deload/retest anchors as chart furniture rather than as a report field.

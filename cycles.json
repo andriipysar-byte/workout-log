@@ -1,5 +1,5 @@
 {
-  "$comment": "Reusable cycle definitions. A cycle is an ordered list of sessions; each session is a template of planned blocks with NO weights — weights are logged per session in data/*.json. `sets_reps` and `role` are planning helpers consumed by the cycle generator (CycleGenerator in workout_log_core, exposed as `dart run bin/wl_gen_cycle.dart` and as the app's new-session-from-template flow) to emit schema-valid session stubs; they never appear in the emitted files. See docs/07-cycle.md.",
+  "$comment": "Reusable cycle definitions. A cycle is an ordered list of sessions; each session is a template of planned blocks with NO weights — weights are logged per session in data/*.json. `sets_reps` and `role` are planning helpers consumed by the cycle generator (the cycle generator in workout-log-core, exposed as `cargo run --bin wl_gen_cycle` and as the app's new-session-from-template flow) to emit schema-valid session stubs; they never appear in the emitted files. See docs/07-cycle.md.",
   "cycles": [
     {
       "id": "hybrid-8",

@@ -8,12 +8,12 @@ One domain core, several surfaces:
    macOS   Linux   Windows   iOS   Android   Web        an MCP client
       └───────┴────────┴──────┴───────┴───────┘                  │
                          │                              workout_log_mcp
-              Flutter UI (pure presentation)              (tools over stdio)
+            Dioxus UI (pure presentation)               (tools over stdio)
                          │                                       │
                          └───────────────┬───────────────────────┘
                                          │
-      workout_log_core — analytics, parsing, validation
-                    (pure Dart: no Flutter, no dart:io)
+      workout-log-core — analytics, parsing, validation
+                 (pure Rust: no I/O, no UI, no protocol)
                          │
               SessionStorage (one per platform)
                          │
@@ -52,7 +52,8 @@ First-class in every language the project might plausibly use, less structural
 noise, cleaner diffs. XML buys schema validation I can get from a JSON Schema
 anyway.
 
-The codecs are hand-written rather than generated, in Dart as they were in Swift:
+The codecs are shaped by hand rather than taken as serde's defaults, as they
+were in Dart and in Swift before that:
 the on-disk shape is not what a generator emits by default — a flat tagged union
 for blocks, sorted keys, omitted nulls, and integral doubles written without a
 `.0`. Each of those is pinned by a test.
@@ -83,17 +84,16 @@ is pure presentation.
 rather than a rewrite. If a single 1RM formula or rep-band rule leaks into a view,
 that promise is broken quietly and I will not notice until the port.
 
-**How it is enforced (2026-09-20).** The core is its own package,
-`flutter/packages/workout_log_core`, which depends on neither `flutter` nor
-`dart:io`. Nothing platform-specific can compile there, so the boundary is a build
-error rather than a convention. `test/purity_test.dart` asserts it directly. The
-Swift package carried the same intent as a comment on the target; a comment cannot
-fail a build.
+**How it is enforced (2026-09-21).** The core is its own crate,
+`crates/workout-log-core`, whose library depends on no UI toolkit, no protocol and
+no filesystem — `SessionStorage` is a trait the platforms implement. Its only
+`std::fs` use is in `src/bin/`, outside the library. The Swift package carried the
+same intent as a comment on the target; a comment cannot fail a build.
 
-**Verdict after the Flutter port.** It held. Every domain rule — the notation
+**Verdict after two ports.** It held both times. Every domain rule — the notation
 grammar, the flat block union, activation weighting, the colour ramp — moved
-across as a mechanical translation. What had to be rebuilt was the view layer,
-which is what the ADR promised.
+across as a mechanical translation, first to Dart and then to Rust. What had to be
+rebuilt each time was the view layer, which is what the ADR promised.
 
 ---
 
@@ -145,8 +145,42 @@ have recreated the problem this amendment exists to record: implementations of
 the same rules drifting apart in silence. The domain now lives in Dart only, and
 `data/` remains the thing that outlives all three.
 
-**Revisit when.** A surface arrives that Flutter does not reach, or the analytics
-engine grows heavy enough that a shared native core beats a Dart one.
+**Revisit when.** See the 2026-09-21 amendment below: the Rust core arrived.
+
+### Amendment, 2026-09-21 — the Rust core arrived after all
+
+**What happened.** The Dart core and the Flutter UI were replaced by
+`crates/workout-log-core` and a Dioxus UI built from the Rust/UI component
+registry. The original ADR said "extract Rust when justified"; what justified it
+was not performance, which was never the problem, but that the reason to *avoid*
+Rust had gone. In 2026-09-20 a Rust core meant a binding layer — `uniffi` or
+`flutter_rust_bridge` — between the domain and the UI, and that layer was the cost
+that kept losing the argument. With the UI itself in Rust there is no binding
+layer: the app calls the core the way any crate calls any crate.
+
+**What it cost.** One pass over roughly 3,000 lines of domain logic, ported
+against the behaviour the Dart suite already pinned rather than against the Dart
+source. The conformance targets were the real files: all nine sessions in `data/`
+round-trip byte for byte through the new encoder, `exercises.json` and
+`cycles.json` survive the models with every hand-written key intact, and
+`wl_gen_cycle` regenerates the eight planned stubs byte-identically to the ones on
+disk. A port that can reproduce the archive is a port that read the rules right.
+
+**What it bought.** One language across the domain, the MCP server and the UI —
+the same consolidation the Dart move was for, one layer deeper. The muscle map
+also stopped being a special case: the core emits SVG, and a webview renders SVG
+natively, where Flutter needed `flutter_svg` and a rendering test to guard against
+CSS support drifting.
+
+**What it cost honestly.** Dioxus desktop is a WebKitGTK webview, so "no Flutter"
+is not "no large GUI runtime" — it is a different one, with system library
+dependencies the Flutter build did not have. Rust/UI is also young and describes
+itself as experimental, so the component layer is the part of this tree most
+likely to churn. Neither is load-bearing for the domain, which is the point of
+ADR-004.
+
+**Revisit when.** A surface arrives that Dioxus does not reach, or the component
+registry stops being maintained and the UI layer has to stand on Dioxus alone.
 
 ---
 
@@ -178,8 +212,8 @@ not *the* folder: the sandbox is the only directory an app may own.
 
 **Consequence.** `SessionStorage` is an interface declared in the core with four
 methods — list, read, write, delete — and implemented per platform. The core never
-learns which one it is talking to, which is also what keeps `dart:io` out of it
-(ADR-004).
+learns which one it is talking to, which is also what keeps the filesystem out of
+it (ADR-004).
 
 **Trade-off accepted.** On the web the archive is not durable across a reload
 unless the user exports. That is stated in the UI rather than hidden: the status
@@ -190,9 +224,9 @@ letting a browser cache eviction look like data loss — is worse.
 
 ## ADR-008 — The MCP server is a surface, not a second core
 
-**Decision.** `mcp/` speaks MCP over stdio and calls `workout_log_core` for
-everything. Argument parsing, the session folder (`dart:io`) and JSON formatting
-live there; no domain rule does.
+**Decision.** `crates/workout-log-mcp` speaks MCP over stdio and calls
+`workout-log-core` for everything. Argument parsing, the session folder and JSON
+formatting live there; no domain rule does.
 
 **Why.** This is ADR-004 with a language model as the UI, and the amendment to
 ADR-005 is the reason to state it again rather than assume it. The cheap version
@@ -203,13 +237,13 @@ the Swift/C++ episode was never the code, it was having two of them.
 
 **Consequence.** Metrics that did not exist yet went into the core rather than
 into the server: `SessionMetrics`, `ExerciseProgress`, `TrainingReport` and
-`SessionValidator` are pure Dart beside `MuscleActivation`, so the app can put
+`SessionValidator` are pure core code beside `MuscleActivation`, so the app can put
 them on screen without anything moving. The server's own test suite exercises
 the protocol and the file effects, not the arithmetic — that is tested where it
 lives.
 
-**Trade-off accepted.** `DirectoryStorage` is written twice, once in the Flutter
-app and once here, because the core may not have `dart:io` and neither surface
+**Trade-off accepted.** `DirectoryStorage` is written twice, once in the app and
+once here, because the core may not touch the filesystem and neither surface
 may depend on the other. It is thirty lines of read/write/rename with no domain
 rule in it; a third package to share it would cost more than it saves.
 
@@ -219,8 +253,8 @@ half-written plan is a normal state of a file (ADR-006) and a model that cannot
 save an unfinished session will invent values to finish it. Deleting takes an
 explicit confirmation: the folder is the only copy (ADR-001).
 
-**Consequence for the reference files.** Editing `exercises.json` through the
-server refreshes the bundled copy under `flutter/assets/data/` in the same
-write, which is what `tool/sync_assets.dart` does by hand. Without it the first
-catalogue edit from a conversation would leave the asset-sync test failing with
-no visible cause.
+**Consequence for the reference files.** The app's bundled fallback copies of
+`exercises.json` and `cycles.json` are `include_str!`ed from the repo root, so a
+catalogue edit through the server cannot leave a stale copy behind. The Dart tree
+mirrored the files into an asset directory and needed a sync tool and a drift test
+to keep the two honest; compiling the real file in deletes that whole class of bug.
